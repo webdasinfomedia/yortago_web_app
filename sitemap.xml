@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+      xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+<!-- created with Free Online Sitemap Generator www.xml-sitemaps.com -->
+
+
+<url>
+  <loc>https://yortago.com/</loc>
+  <lastmod>2025-01-03T17:15:53+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+<url>
+  <loc>https://yortago.com/in/person</loc>
+  <lastmod>2025-01-03T17:15:53+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://yortago.com/online/training</loc>
+  <lastmod>2025-01-03T17:15:53+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://yortago.com/shop</loc>
+  <lastmod>2025-01-03T17:15:53+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://yortago.com/blog</loc>
+  <lastmod>2025-01-03T17:15:53+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://yortago.com/login</loc>
+  <lastmod>2025-01-03T17:15:53+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://yortago.com/term/condition</loc>
+  <lastmod>2025-01-03T17:15:53+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://yortago.com/privacy/policy</loc>
+  <lastmod>2025-01-03T17:15:53+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://yortago.com/product_detail</loc>
+  <lastmod>2025-01-03T17:15:53+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://yortago.com/blog_detail?id=eyJpdiI6ImlnU3BGZWF3aUxJci9GYzc4aWdqQlE9PSIsInZhbHVlIjoiOHduMnZqbXpXTFBQbkpFVGFzaTdTQT09IiwibWFjIjoiMTNiYmIyZGQxYjgxZjVhZjA5NWZkYWJlZDhlOTUwOWZhMGYwZjU1MTdmMzRiNjJlZmEzZTM4OWQzNzM1MjI3ZiIsInRhZyI6IiJ9</loc>
+  <lastmod>2025-01-03T17:15:53+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://yortago.com/register</loc>
+  <lastmod>2025-01-03T17:15:53+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://yortago.com/forgot-password</loc>
+  <lastmod>2025-01-03T17:15:53+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://yortago.com/about/us</loc>
+  <lastmod>2025-01-03T17:15:53+00:00</lastmod>
+  <priority>0.51</priority>
+</url>
+<url>
+  <loc>https://yortago.com/sign/up</loc>
+  <lastmod>2025-01-03T17:15:53+00:00</lastmod>
+  <priority>0.51</priority>
+</url>
+
+
+</urlset>

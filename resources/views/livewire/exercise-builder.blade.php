@@ -1,0 +1,1126 @@
+<div>
+    <div class="container-fluid">
+        <style>
+            .week-day-sidebar {
+                background: #ffffff;
+                border: 1px solid #dee2e6;
+                /* border-top: 1px solid #dee2e6; */
+                min-height: 80vh;
+                padding: 15px;
+            }
+
+            .week-card {
+                border: 1px solid #dee2e6;
+                border-radius: 8px;
+                margin-bottom: 10px;
+                overflow: hidden;
+            }
+
+            .week-header {
+                background: #fff;
+                padding: 12px 15px;
+                border-bottom: 1px solid #dee2e6;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .week-header:hover {
+                background: #f8f9fa;
+            }
+
+            .week-header.active {
+                background: linear-gradient(to right, #fff0e2ff, #ffdfccff);
+                border-left: 4px solid #ff6600ff;
+                font-weight: 600;
+            }
+
+            .week-header-content {
+                display: flex;
+                align-items: center;
+                flex: 1;
+            }
+
+            .week-actions {
+                display: flex;
+                gap: 5px;
+                flex-shrink: 0;
+            }
+
+            .day-item {
+                padding: 10px 15px;
+                border-bottom: 1px solid #f1f1f1;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .day-item:hover {
+                background: #f8f9fa;
+            }
+
+            .day-item.active {
+                background: #d4edda;
+                border-left: 3px solid #28a745;
+                font-weight: 600;
+            }
+
+            .day-item:last-child {
+                border-bottom: none;
+            }
+
+            .exercise-card {
+                border: 1px solid #dee2e6;
+                border-radius: 8px;
+                margin-bottom: 15px;
+                overflow: hidden;
+            }
+
+            .exercise-header {
+                background: #ffffff;
+                padding: 12px 15px;
+                border-bottom: 1px solid #dee2e6;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                cursor: pointer;
+            }
+
+            .btn-action {
+                font-size: 19px;
+                padding: 0px 7px;
+                margin-left: 5px;
+            }
+
+            .btn-primary-custom {
+                background: linear-gradient(to right, #d38d49, #d76e33);
+                border-color: #d76e33;
+                color: white;
+            }
+
+            .btn-warning-custom {
+                background: linear-gradient(to right, #d38d49, #d76e33); 
+                border-color: #d76e33;
+                color: white;
+            }
+
+            .btn-success-custom {
+                background: #28a745;
+                border-color: #28a745;
+                color: white;
+            }
+
+            .btn-danger-custom {
+                background: #ff4255ee;
+                color: white;
+                border: none;
+            }
+
+            .form-control-sm {
+                font-size: 0.675rem;
+                height: 30px;
+            }
+            .form-control{
+                font-size: 14px !important;
+            }
+            .form-label {
+                font-size: 14px;
+            }
+
+            .modal-backdrop {
+                z-index: 1040;
+            }
+
+            .modal {
+                z-index: 1050;
+            }
+
+            .exercise-content {
+                padding: 20px;
+                border:1px solid #dee2e6; 
+                background: #ffffff;
+            }
+            .programname{
+                font-weight: 600;
+                font-size: 20px;
+            }
+
+            .day-actions {
+                display: flex;
+                gap: 5px;
+            }
+            .add-day-btn{
+                font-size: 14px;
+                cursor: pointer !important;
+            }
+            
+            /* Custom accordion styles */
+            .accordion-arrow {
+                transition: transform 0.2s ease;
+                margin-right: 8px;
+            }
+            
+            .accordion-arrow.rotated {
+                transform: rotate(90deg);
+            }
+            .left-sidebar-title{
+                font-size: 18px;
+                font-weight: 600;
+            }
+
+            /* Prevent text selection on accordion headers */
+            .week-header, .exercise-header {
+                user-select: none;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+            }
+            .exercise-errors, .exercise-alert{
+                color: red;
+                background-color: white;
+                border: none;
+            }
+            .select2-dropdown--below , .select2-dropdown--above{
+             width: 470px !important;
+            }
+            .select2-container .select2-selection--single{
+                    border-radius: 0;
+                    background: #fff;
+                    border: 1px solid #f0f1f5;
+                    color: #7e7e7e;
+                    font-size: 14px;
+                    font-family: 'poppins', sans-serif;
+
+                    /* height: 56px; */
+            }
+            .select2-container--default .select2-selection--single .select2-selection__rendered{
+                color:#6e6e6e !important;
+                line-height: 30px !important;
+            }
+            .select2-container--default .select2-selection--single .select2-selection__clear{
+                height: 30px !important;
+            }
+            .select2-container--default .select2-selection--single .select2-selection__arrow{
+                height: 30px !important;
+            }
+            .card-body {
+                flex: 1 1 auto;
+                min-height: 1px;
+                padding: 0.75rem !important;
+            }
+            /* Add this to your <style> section */
+            .exercise-errors {
+                min-height: 0;
+                transition: min-height 0.2s ease;
+            }
+
+            .exercise-errors .exercise-alert {
+                display: none;
+                margin-bottom: 5px;
+            }
+
+            .exercise-errors .exercise-alert.has-errors {
+                display: block;
+            }
+
+            /* Alternative approach - reserve fixed space */
+            .exercise-errors-container {
+                min-height: 20px; /* Reserve space for error messages */
+            }
+            .text-muted , .text-info{
+                font-size: 14px;
+
+            }
+            .text-muted{
+                color:#6e6e6e !important;
+            }
+            .modal-title{
+                font-size: 18px;
+                color:#7e7e7e !important;
+            }
+            .btn:hover {
+                color: white;
+                text-decoration: underline !important;
+            }
+            .select2-container--default .select2-results>.select2-results__options{
+                font-size: 14px !important;
+            }
+           
+        </style>
+
+        <!-- Day Title Modal -->
+        @if($showTitleModal)
+            <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Edit Day Title</h5>
+                            <button type="button" class="close" wire:click="closeTitleModal">
+                                <span>&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form wire:submit.prevent="saveDayTitle">
+                                <div class="form-group">
+                                    <label for="dayTitle">Day Title *</label>
+                                    <input type="text" 
+                                        class="form-control @error('dayTitle') is-invalid @enderror" 
+                                        id="dayTitle" 
+                                        wire:model="dayTitle" 
+                                        placeholder="Enter Day Title..."
+                                        required>
+                                    @error('dayTitle')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="daySummary">Summary</label>
+                                    <textarea class="form-control @error('daySummary') is-invalid @enderror" 
+                                            id="daySummary" 
+                                            wire:model="daySummary" 
+                                            rows="3"
+                                            placeholder="Enter Day Summary..."></textarea>
+                                    @error('daySummary')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="dayDuration">Duration(min)</label>
+                                    <input type="text" 
+                                        class="form-control @error('dayDuration') is-invalid @enderror" 
+                                        id="dayDuration" 
+                                        wire:model="dayDuration" 
+                                        placeholder="Enter Day Duration...">
+                                    @error('dayDuration')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" wire:click="closeTitleModal">Cancel</button>
+                            <button type="button" class="btn btn-primary" wire:click="saveDayTitle">Save Changes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-backdrop fade show"></div>
+        @endif
+    </div>
+
+    <script>
+        // Store accordion states
+        let accordionStates = new Map();
+    
+        document.addEventListener('DOMContentLoaded', function() {
+            $('.searchable-select').select2({
+                placeholder: "--Select Exercise--",
+                allowClear: true,
+                width: 'auto',
+                dropdownAutoWidth: true
+            });
+            
+            // Initialize accordion states
+            initAccordionStates();
+            
+            window.addEventListener('show-success', event => {
+                if (typeof toastr !== 'undefined') {
+                    toastr.success(event.detail.message);
+                } else {
+                    alert('Success: ' + event.detail.message);
+                }
+            });
+    
+            window.addEventListener('show-error', event => {
+                if (typeof toastr !== 'undefined') {
+                    toastr.error(event.detail.message);
+                } else {
+                    alert('Error: ' + event.detail.message);
+                }
+            });
+        });
+    
+        function initAccordionStates() {
+            document.querySelectorAll('[id^="weekDays"]').forEach(accordion => {
+                const weekId = accordion.id.replace('weekDays', '');
+                const isOpen = accordion.style.display === 'block';
+                accordionStates.set(weekId, isOpen);
+            });
+        }
+    
+        // Simple toggle function without auto-selecting
+        function toggleAccordion(weekId, event) {
+            // Prevent if clicking on buttons
+            if (event && (event.target.closest('.week-actions') || event.target.closest('button'))) {
+                return;
+            }
+    
+            const accordion = document.getElementById('weekDays' + weekId);
+            const arrow = document.getElementById('arrow' + weekId);
+            
+            if (!accordion || !arrow) return;
+    
+            // Simple toggle
+            const isCurrentlyOpen = accordion.style.display === 'block';
+            
+            if (isCurrentlyOpen) {
+                accordion.style.display = 'none';
+                arrow.classList.remove('rotated');
+                accordionStates.set(weekId.toString(), false);
+            } else {
+                accordion.style.display = 'block';
+                arrow.classList.add('rotated');
+                accordionStates.set(weekId.toString(), true);
+            }
+        }
+    
+        // Custom exercise accordion
+        function toggleAccordionExercise(exerciseId, event) {
+            if (event && (event.target.closest('button') || event.target.tagName === 'BUTTON')) {
+                return;
+            }
+    
+            const body = document.getElementById('exerciseBody' + exerciseId);
+            const arrow = document.getElementById('exerciseArrow' + exerciseId);
+    
+            if (!body) return;
+    
+            if (body.style.display === 'none' || body.style.display === '') {
+                body.style.display = 'block';
+                if (arrow) arrow.classList.add('rotated');
+            } else {
+                body.style.display = 'none';
+                if (arrow) arrow.classList.remove('rotated');
+            }
+        }
+    
+        window.addEventListener('sync-week-accordion', event => {
+            const weekId = event.detail.weekId;
+            
+            // Update accordion states map
+            accordionStates.forEach((isOpen, key) => {
+                // Keep all other open weeks unchanged
+                if (key === weekId.toString()) {
+                    accordionStates.set(key, true);
+                }
+            });
+
+            // Force rotation sync after selection
+            setTimeout(() => {
+                restoreAccordions();
+            }, 20);
+        });
+
+        // Restore accordion states after Livewire updates
+        function restoreAccordions() {
+
+            accordionStates.forEach((isOpen, weekId) => {
+                const accordion = document.getElementById('weekDays' + weekId);
+                const arrow = document.getElementById('arrow' + weekId);
+                
+                if (accordion && arrow) {
+                    if (isOpen) {
+                        accordion.style.display = 'block';
+                        arrow.classList.add('rotated');
+                    } else {
+                        accordion.style.display = 'none';
+                        arrow.classList.remove('rotated');
+                    }
+                }
+            });
+        }
+    
+        // Initialize accordion state after Livewire loads
+        document.addEventListener('livewire:load', function () {
+            initAccordionStates(); 
+        });
+    
+        // Restore states after Livewire updates
+        document.addEventListener('livewire:update', function () {
+            setTimeout(restoreAccordions, 10);
+        });
+    
+        // For Livewire v3
+        document.addEventListener('livewire:updated', function () {
+            setTimeout(restoreAccordions, 10);
+        });
+    
+        // Global validation function
+        function validateField(input) {
+            const value = input.value.trim();
+            let error = "";
+
+            if (value === "") {
+                error = `${capitalize(input.name)} is required.`;
+            } else if (isNaN(value) || parseInt(value) <= 0) {
+                error = `${capitalize(input.name)} must be a number greater than 0.`;
+            }
+            else if (parseInt(value) > 999) {
+                error = `${capitalize(input.name)} cannot exceed 3 digits value.`;
+            }
+
+            const exerciseCard = input.closest(".exercise-card");
+            const errorList = exerciseCard.querySelector(".exercise-error-list");
+            const errorContainer = errorList.parentElement;
+
+            if (error) {
+                input.classList.add("is-invalid");
+                input.value = "";
+
+                let li = errorList.querySelector(`li[data-field="${input.name}"]`);
+                if (!li) {
+                    li = document.createElement("li");
+                    li.setAttribute("data-field", input.name);
+                    errorList.appendChild(li);
+                }
+                li.textContent = error;
+
+                // Use class instead of inline style
+                errorContainer.classList.add('has-errors');
+                errorContainer.style.display = "block";
+
+                if (input.dataset.timeoutId) {
+                    clearTimeout(parseInt(input.dataset.timeoutId));
+                }
+
+                const timeoutId = setTimeout(() => {
+                    input.classList.remove("is-invalid");
+                    let li = errorList.querySelector(`li[data-field="${input.name}"]`);
+                    if (li) li.remove();
+
+                    // Check if there are any errors left
+                    if (errorList.children.length === 0) {
+                        errorContainer.classList.remove('has-errors');
+                        errorContainer.style.display = 'none';
+                    }
+                    
+                    delete input.dataset.timeoutId;
+                }, 10000);
+
+                input.dataset.timeoutId = timeoutId;
+            } else {
+                input.classList.remove("is-invalid");
+
+                if (input.dataset.timeoutId) {
+                    clearTimeout(parseInt(input.dataset.timeoutId));
+                    delete input.dataset.timeoutId;
+                }
+
+                let li = errorList.querySelector(`li[data-field="${input.name}"]`);
+                if (li) li.remove();
+
+                // Check if there are any errors left
+                if (errorList.children.length === 0) {
+                    errorContainer.classList.remove('has-errors');
+                    errorContainer.style.display = 'none';
+                }
+            }
+        }
+    
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+    
+        function attachValidation() {
+            const fields = document.querySelectorAll(".exercise-field");
+            
+            fields.forEach(field => {
+                if (!field.dataset.validationAttached) {
+                    field.addEventListener("blur", function () {
+                        validateField(this);
+                    });
+                    field.dataset.validationAttached = "true";
+                }
+            });
+        }
+    
+        document.addEventListener("DOMContentLoaded", function () {
+            attachValidation();
+        });
+    
+        window.addEventListener('livewire:load', function () {
+            attachValidation();
+            
+            Livewire.hook('message.processed', (message, component) => {
+                setTimeout(() => {
+                    attachValidation();
+                }, 100);
+            });
+           
+              // Weight select handlers
+            // @foreach($exerciseLists as $exercise)
+            //     let weightSelect{{ $exercise['id'] }} = document.querySelector('#exerciseWeight{{ $exercise['id'] }}');
+            //     let weightDiv{{ $exercise['id'] }} = document.querySelector('#weightValueDiv{{ $exercise['id'] }}');
+    
+            //     if(weightSelect{{ $exercise['id'] }}) {
+            //         weightSelect{{ $exercise['id'] }}.addEventListener('change', function() {
+            //             if(this.value === 'Yes') {
+            //                 weightDiv{{ $exercise['id'] }}.style.display = 'block';
+            //             } else {
+            //                 weightDiv{{ $exercise['id'] }}.style.display = 'none';
+            //             }
+            //         });
+            //     }
+            // @endforeach
+            
+            // document.addEventListener('change', function(e) {
+            //     if (e.target.id && e.target.id.startsWith('altWeight')) {
+            //         const alternateId = e.target.id.replace('altWeight', '');
+            //         const weightDiv = document.getElementById('altWeightValueDiv' + alternateId);
+                    
+            //         if (weightDiv) {
+            //             weightDiv.style.display = e.target.value === 'Yes' ? 'block' : 'none';
+            //         }
+            //     }
+            // });
+        });
+    
+        // if (typeof MutationObserver !== 'undefined') {
+        //     const observer = new MutationObserver(function(mutations) {
+        //         mutations.forEach(function(mutation) {
+        //             if (mutation.addedNodes.length) {
+        //                 attachValidation();
+        //             }
+        //         });
+        //     });
+    
+        //     document.addEventListener("DOMContentLoaded", function() {
+        //         const targetNode = document.querySelector('.exercise-content');
+        //         if (targetNode) {
+        //             observer.observe(targetNode, {
+        //                 childList: true,
+        //                 subtree: true
+        //             });
+        //         }
+        //     });
+        // }
+        // Add this after the other event listeners in DOMContentLoaded
+        window.addEventListener('exercise-updated', event => {
+            // Force a small delay to ensure DOM updates
+            setTimeout(() => {
+                // Trigger Livewire to re-render the component
+                if (typeof Livewire !== 'undefined') {
+                    Livewire.emit('$refresh');
+                }
+            }, 100);
+        });
+        function attachWeightHandlers() {
+    // Regular exercises
+    document.querySelectorAll('[id^="exerciseWeight"]').forEach(select => {
+        const exerciseId = select.id.replace('exerciseWeight', '');
+        const weightDiv = document.getElementById('weightValueDiv' + exerciseId);
+
+        if (!weightDiv) return;
+
+        // Set initial visibility (in case Livewire re-rendered)
+        weightDiv.style.display = select.value === 'Yes' ? 'block' : 'none';
+
+        // Remove old listener (to prevent multiple bindings)
+        select.removeEventListener('change', select._weightChangeHandler || (() => {}));
+
+        // Define and store a new handler
+        const handler = function() {
+            weightDiv.style.display = this.value === 'Yes' ? 'block' : 'none';
+        };
+
+        select.addEventListener('change', handler);
+        select._weightChangeHandler = handler;
+    });
+
+    // Alternate exercises
+    document.querySelectorAll('[id^="altWeight"]').forEach(select => {
+        const altId = select.id.replace('altWeight', '');
+        const weightDiv = document.getElementById('altWeightValueDiv' + altId);
+
+        if (!weightDiv) return;
+
+        // Set initial visibility
+        weightDiv.style.display = select.value === 'Yes' ? 'block' : 'none';
+
+        // Remove old listener
+        select.removeEventListener('change', select._altWeightChangeHandler || (() => {}));
+
+        const handler = function() {
+            weightDiv.style.display = this.value === 'Yes' ? 'block' : 'none';
+        };
+
+        select.addEventListener('change', handler);
+        select._altWeightChangeHandler = handler;
+    });
+}
+
+// Run after page load
+document.addEventListener('DOMContentLoaded', attachWeightHandlers);
+
+// Run after any Livewire DOM update
+document.addEventListener('livewire:update', () => setTimeout(attachWeightHandlers, 50));
+document.addEventListener('livewire:load', () => setTimeout(attachWeightHandlers, 50));
+document.addEventListener('livewire:updated', () => setTimeout(attachWeightHandlers, 50));
+
+    </script>
+
+    <!-- Success/Error Messages -->
+    @if (session()->has('message'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('message') }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    @endif
+    
+    <div class="d-flex justify-content-between align-items-center  mb-2">
+        <div class="programname">Program Title : {{ ucfirst($this->exercise->title) }}</div>
+        <a href="{{ route('admin.new.exercise.manage') }}" class="btn btn-rounded btn-secondary btn-sm">
+            Back to Programs
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Left Sidebar: Weeks & Days -->
+        <div class="col-md-4 week-day-sidebar">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="text-primary mb-0 left-sidebar-title">Weeks & Days</h6>
+                <div>
+                    <!-- <button type="button" wire:click="ensureAllDaysHaveMinimumExercises" class="btn btn-info btn-sm mr-1" title="Ensure all days have 6 exercises">
+                        <i class="fa fa-sync"></i> Fix All
+                    </button> -->
+                    <button type="button" wire:click="addWeek" class="btn btn-warning-custom btn-sm">
+                        <i class="fa fa-plus"></i> Add Week
+                    </button>
+                </div>
+            </div>
+
+            <!-- Weeks List -->
+            <div class="weeks-container">
+                @foreach($weeks as $weekIndex => $week)
+                    <div class="week-card" wire:key="week-{{ $week['id'] }}">
+                        <!-- Week Header - FIXED VERSION -->
+                        <!--<div class="week-header {{ $selectedWeekId === $week['id'] ? 'active' : '' }}"-->
+                        <!--     onclick="toggleAccordion({{ $week['id'] }}, event); @this.selectWeek({{ $week['id'] }})">-->
+                        
+                        <!-- Week Header -->
+                        <div class="week-header {{ $selectedWeekId === $week['id'] ? 'active' : '' }}"
+                            onclick="toggleAccordion({{ $week['id'] }}, event)">
+                            
+                            <div class="week-header-content">
+                                <i id="arrow{{ $week['id'] }}" 
+                                class="fa fa-chevron-right accordion-arrow {{ $activeWeekAccordion === $week['id'] ? 'rotated' : '' }}"></i>
+                                <i class="fa fa-calendar-week mr-2"></i>
+                                <strong>Week {{ $week['number'] }}</strong>
+                                <small class="text-muted ml-2">({{ count($week['days']) }} days)</small>
+                            </div>
+                            
+                            <div class="week-actions" onclick="event.stopPropagation();">
+                                @if(count($week['days']) < 7)
+                                <button type="button" 
+                                        wire:click.stop="addDay({{ $week['id'] }})" 
+                                        class="btn btn-success-custom btn-action add-day-btn"
+                                        title="Add Day">
+                                    Add Day
+                                </button>
+                                @endif
+                                @if(count($weeks) > 1)
+                                   <button type="button"
+                                            wire:click="deleteWeek({{ $week['id'] }})"
+                                            wire:confirm="Are you sure you want to delete this week?"
+                                            class="btn btn-danger-custom btn-action"
+                                            title="Delete Week">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                @endif
+                            </div>
+                        </div>
+                        <!-- Week Days -->
+                        <div id="weekDays{{ $week['id'] }}" 
+                        style="display: {{ $activeWeekAccordion === $week['id'] ? 'block' : 'none' }};"
+                        wire:ignore.self>
+                        @foreach($week['days'] as $dayIndex => $day)
+                        <div class="day-item {{ $selectedDayId === $day['id'] ? 'active' : '' }}"
+                                wire:click="selectDay({{ $day['id'] }})"
+                                wire:key="day-{{ $day['id'] }}">
+                            
+                            <div class="flex-grow-1" style="flex: 1;">
+                               
+                                <strong>Day {{ $day['number'] }}</strong>
+                                <div class="small text-muted mt-1">
+                                        
+                                    {{ $day['title'] ?: 'Title Not Added' }}
+                                </div>
+                                @if($day['duration'])
+                                    <div class="small text-info">
+                                       </i>{{ $day['duration'] }} min
+                                    </div>
+                                @endif
+                            </div>
+                            
+                            <div class="day-actions" onclick="event.stopPropagation();">
+                                <button type="button"
+                                        wire:click.stop="openTitleModal({{ $day['id'] }})" 
+                                        class="btn btn-warning-custom btn-action"
+                                        title="Edit Title">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+                                @if(count($week['days']) > 1)
+                                    <button type="button"
+                                            wire:click="deleteDay({{ $day['id'] }})"
+                                            wire:confirm="Are you sure you want to delete this day?"
+                                            class="btn btn-danger-custom btn-action"
+                                            title="Delete Day">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                @endif
+                            </div>
+                        </div>
+                        @endforeach
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        <!-- Right Side: Exercises -->
+        <div class="col-md-8">
+            <div class="exercise-content">
+                @if($selectedDayId)
+                    @php
+                        $selectedDay = null;
+                        $selectedWeek = null;
+                        $selectedWeekNumber = null;
+                        
+                        foreach($weeks as $week) {
+                            foreach($week['days'] as $day) {
+                                if($day['id'] == $selectedDayId) {
+                                    $selectedDay = $day;
+                                    $selectedWeek = $week;
+                                    $selectedWeekNumber = $week['number'];
+                                    break 2;
+                                }
+                            }
+                        }
+                    @endphp
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h5 class="text-primary mb-1">
+                            Week {{ $selectedWeekNumber }} - {{ $selectedDay['title'] ?? 'Day Exercises' }}</h5>
+                            @if($selectedDay['summary'])
+                                <small class="text-muted">{{ $selectedDay['summary'] }}</small>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Exercises -->
+                    @forelse($selectedDayExercises as $exerciseIndex => $exercise)
+                       <div class="exercise-card" wire:key="exercise-{{ $exercise['id'] }}">
+                        <div class="exercise-header" 
+                            onclick="toggleAccordionExercise({{ $exercise['id'] }}, event)">
+                            <div class="d-flex align-items-center">
+                                <i id="exerciseArrow{{ $exercise['id'] }}" 
+                                class="fa fa-chevron-right mr-2 accordion-arrow {{ $exercise['is_open'] ?? true ? 'rotated' : '' }}">
+                                </i>
+                                <i class="fa fa-dumbbell mr-2 text-primary"></i>
+                                <strong>Exercise {{ $exerciseIndex + 1 }}</strong>
+                                @if($exercise['exercise_list_id'] && $exerciseLists->find($exercise['exercise_list_id']))
+                                    <span class="ml-2 text-muted">- {{ $exerciseLists->find($exercise['exercise_list_id'])->name }}</span>
+                                @endif
+                            </div>
+                          <button type="button"
+                                    wire:click="deleteExercise({{ $exercise['id'] }})"
+                                    wire:confirm="Are you sure you want to delete this exercise?"
+                                    class="btn btn-danger-custom btn-action"
+                                    title="Delete Exercise">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+
+                        <!-- Main Exercise Body -->
+                        <div id="exerciseBody{{ $exercise['id'] }}" class="card-body" style="display: block;">
+                            <!-- Your existing exercise form fields here (from document 3) -->
+                            <div class="row">
+                                <!-- Exercise Selection -->
+                                <div class="col-md-3 mb-1">
+                                    <label class="form-label">Exercise List</label>
+                                    <select class="form-control form-control-sm searchable-select"
+                                            wire:change="updateExercise({{ $exercise['id'] }}, 'exercise_list_id', $event.target.value)">
+                                        <option value="">--Select Exercise--</option>
+                                        @foreach($exerciseLists as $list)
+                                            <option value="{{ $list->id }}" {{ $exercise['exercise_list_id'] == $list->id ? 'selected' : '' }}>
+                                                {{ $list->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <!-- Sets -->
+                                <div class="col-md-2 mb-1">
+                                    <label class="form-label">Sets</label>
+                                    <input type="text" name="sets" class="form-control form-control-sm p-0 text-center exercise-field"    
+                                        value="{{ $exercise['sets'] }}"
+                                        wire:blur="updateExercise({{ $exercise['id'] }}, 'sets', $event.target.value)">
+                                </div>
+
+                                <!-- Reps -->
+                                <div class="col-md-2 mb-1">
+                                    <label class="form-label">Reps</label>
+                                    <input type="text" name="reps" class="form-control form-control-sm p-0 text-center exercise-field"
+                                        value="{{ $exercise['reps'] }}"
+                                        wire:blur="updateExercise({{ $exercise['id'] }}, 'reps', $event.target.value)">
+                                </div>
+
+                                <!-- Rest -->
+                                <div class="col-md-2 mb-1">
+                                    <label class="form-label">Rest</label>
+                                    <input type="text" name="rest" class="form-control form-control-sm p-0 text-center exercise-field"
+                                        value="{{ $exercise['rest'] }}"
+                                        wire:blur="updateExercise({{ $exercise['id'] }}, 'rest', $event.target.value)">
+                                </div>
+
+                                <!-- Tempo -->
+                                <div class="col-md-2 mb-1">
+                                    <label class="form-label">Tempo</label>
+                                    <input type="text" class="form-control form-control-sm"
+                                        value="{{ $exercise['tempo'] }}"
+                                        wire:blur="updateExercise({{ $exercise['id'] }}, 'tempo', $event.target.value)">
+                                </div>
+
+                                <!-- Intensity -->
+                                <div class="col-md-3 mb-1">
+                                    <label class="form-label">Intensity</label>
+                                    <select class="form-control form-control-sm"
+                                            wire:change="updateExercise({{ $exercise['id'] }}, 'intensity', $event.target.value)">
+                                        <option value="">--Select Intensity--</option>
+                                        <option value="Low" {{ $exercise['intensity'] === 'Low' ? 'selected' : '' }}>Low</option>
+                                        <option value="Moderate" {{ $exercise['intensity'] === 'Moderate' ? 'selected' : '' }}>Moderate</option>
+                                        <option value="High" {{ $exercise['intensity'] === 'High' ? 'selected' : '' }}>High</option>
+                                    </select>
+                                </div>
+
+                                <!-- Weight -->
+                                <div class="col-md-2 mb-1">
+                                    <label class="form-label">Weight</label>
+                                    <select class="form-control form-control-sm" id="exerciseWeight{{ $exercise['id'] }}"
+                                            wire:change="updateExercise({{ $exercise['id'] }}, 'weight', $event.target.value)">
+                                        <option value="">--Select Weight--</option>
+                                        <option value="Yes" {{ $exercise['weight'] === 'Yes' ? 'selected' : '' }}>Yes</option>
+                                        <option value="No" {{ $exercise['weight'] === 'No' ? 'selected' : '' }}>No</option>
+                                    </select>
+                                </div>
+
+                                <!-- Weight Value -->
+                                <div class="col-md-2 mb-1" id="weightValueDiv{{ $exercise['id'] }}" style="display: {{ $exercise['weight'] === 'Yes' ? 'block' : 'none' }};">
+                                    <label class="form-label">Weight(kg)</label>
+                                    <input type="text" class="form-control form-control-sm"
+                                        value="{{ $exercise['weight_value'] ?? '' }}"
+                                        wire:blur="updateExercise({{ $exercise['id'] }}, 'weight_value', $event.target.value)">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12 exercise-errors-container">
+                                    <div class="alert alert-danger py-1 px-3 exercise-alert" style="display: none;">
+                                        <ul class="mb-0 exercise-error-list"></ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <!-- Notes -->
+                                <div class="col-12 mb-1">
+                                    <label class="form-label">Instructions/Notes</label>
+                                    <textarea class="form-control" rows="2"
+                                            wire:blur="updateExercise({{ $exercise['id'] }}, 'notes', $event.target.value)">{{ strip_tags(html_entity_decode($exercise['notes'] ?? '')) }}</textarea>
+                                </div>
+                            </div>
+
+                           
+                           <!-- Alternate Exercise Button -->
+                            @if($exercise['exercise_list_id'])
+                                @php
+                                    // Check if there are alternates not linked to THIS specific exercise item
+                                    $hasUnlinkedAlternates = \App\Models\AlternateExerciseList::where('exercise_list_id', $exercise['exercise_list_id'])
+                                        ->where(function($query) {
+                                            $query->whereNull('sets')
+                                                ->orWhereNull('reps')
+                                                ->orWhereNull('rest')
+                                                ->orWhereNull('tempo')
+                                                ->orWhereNull('intensity');
+                                        })
+                                        ->exists();
+                                @endphp
+                                
+                                @if($hasUnlinkedAlternates )
+                                    <div class="row mt-2">
+                                        <div class="col-12 text-right">
+                                            <button type="button" 
+                                                    wire:click="addAlternateExercise({{ $exercise['id'] }})"
+                                                    class="btn btn-primary-custom btn-sm"
+                                                    title="Add Alternate Exercise">
+                                                <i class="fa fa-plus"></i> Add Alternate
+                                            </button>
+                                        </div>
+                                    </div>
+                                @endif
+                            @endif
+                            <!-- Alternate Exercises Section -->
+                        
+                       @if(isset($exercise['alternates']) && count($exercise['alternates']) > 0)
+                        <div class="mt-2 pt-2 border-top">
+                            <h6 class="text-primary mb-3">
+                                <i class="fa fa-exchange-alt"></i> Alternate Exercises
+                            </h6>
+
+                            @foreach($exercise['alternates'] as $altIndex => $alternate)
+                                <div class="card mb-1 border-primary" wire:key="alternate-{{ $exercise['id'] }}-{{ $alternate['id'] }}">
+                                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                                        <strong> {{ $alternate['name'] }}</strong>
+                                        <button type="button"
+                                                onclick="event.stopPropagation(); if(confirm('Are you sure you want to remove this alternate exercise?')) { @this.deleteAlternateExercise({{ $alternate['id'] }}) }"
+                                                class="btn btn-danger-custom btn-action"
+                                                title="Remove Alternate">
+                                            <i class="fa fa-trash"></i> 
+                                        </button>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                             <div class="col-md-3 mb-1">
+                                                <label class="form-label">Name</label>
+                                                <input type="text" 
+                                                    name="alt_name_{{ $alternate['id'] }}"
+                                                    class="form-control form-control-sm p-0 text-center"
+                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.name" readonly>
+                                            </div>
+                                            <!-- Sets -->
+                                            <div class="col-md-2 mb-1">
+                                                <label class="form-label">Sets</label>
+                                                <input type="text" 
+                                                    name="alt_sets_{{ $alternate['id'] }}"
+                                                    class="form-control form-control-sm p-0 text-center exercise-field"
+                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.sets">
+                                            </div>
+
+                                            <!-- Reps -->
+                                            <div class="col-md-2 mb-1">
+                                                <label class="form-label">Reps</label>
+                                                <input type="text" 
+                                                    name="alt_reps_{{ $alternate['id'] }}"
+                                                    class="form-control form-control-sm p-0 text-center exercise-field"
+                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.reps">
+                                            </div>
+
+                                            <!-- Rest -->
+                                            <div class="col-md-2 mb-1">
+                                                <label class="form-label">Rest</label>
+                                                <input type="text" 
+                                                    name="alt_rest_{{ $alternate['id'] }}"
+                                                    class="form-control form-control-sm p-0 text-center exercise-field"
+                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.rest">
+                                            </div>
+
+                                            <!-- Tempo -->
+                                            <div class="col-md-2 mb-1">
+                                                <label class="form-label">Tempo</label>
+                                                <input type="text" 
+                                                    class="form-control form-control-sm p-0 text-center"
+                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.tempo">
+                                            </div>
+
+                                            <!-- Intensity -->
+                                            <div class="col-md-2 mb-1">
+                                                <label class="form-label">Intensity</label>
+                                                <select class="form-control form-control-sm"
+                                                        wire:model.defer="alternates.{{ $alternate['id'] }}.intensity">
+                                                    <option value="">-- Select --</option>
+                                                    <option value="Low">Low</option>
+                                                    <option value="Moderate">Moderate</option>
+                                                    <option value="High">High</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- Weight -->
+                                            <div class="col-md-2 mb-1">
+                                                <label class="form-label">Weight</label>
+                                                <select class="form-control form-control-sm" 
+                                                        wire:model.defer="alternates.{{ $alternate['id'] }}.weight">
+                                                    <option value="">-- Select --</option>
+                                                    <option value="Yes">Yes</option>
+                                                    <option value="No">No</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- Weight Value -->
+                                            @if($alternate['weight'] === 'Yes')
+                                            <div class="col-md-2 mb-1">
+                                                <label class="form-label">Weight(kg)</label>
+                                                <input type="text" 
+                                                    class="form-control form-control-sm p-0 text-center"
+                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.weight_value">
+                                            </div>
+                                            @endif
+                                        </div>
+
+                                        <div class="row">
+                                            <!-- Notes -->
+                                            <div class="col-12 mb-1">
+                                                <label class="form-label">Instructions/Notes</label>
+                                                <textarea class="form-control" 
+                                                        rows="2"
+                                                        wire:model.defer="alternates.{{ $alternate['id'] }}.notes"></textarea>
+                                            </div>
+                                        </div>
+
+                                        <div class="row mt-1 justify-content-end">
+                                            <button wire:click="saveAlternate({{ $alternate['id'] }})" class="btn btn-primary btn-sm mr-3">
+                                                Save Alternate
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                        </div>
+
+                        
+                    </div>
+
+                    @empty
+                        <div class="text-center py-5">
+                            <i class="fa fa-dumbbell fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No exercises found</h5>
+                            <p class="text-muted">Click on "Days" to preload exercises</p>
+                            <!-- <button wire:click="addExercise" class="btn btn-primary-custom">
+                                <i class="fa fa-plus"></i> Add First Exercise
+                            </button> -->
+                        </div>
+                    @endforelse
+                @else
+                    <div class="text-center py-5">
+                        <i class="fa fa-calendar fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Select a day to view exercises</h5>
+                        <p class="text-muted">Choose a week and day from the sidebar to start building your workout</p>
+                    </div>
+                @endif
+                <div class=" d-flex justify-content-end">
+                    <button type="button" wire:click="addExercise" class="btn btn-primary-custom btn-sm">
+                        <i class="fa fa-plus"></i> Add Exercise
+                    </button>
+                    <!-- <button type="button" wire:click="refreshDayExercises" class="btn btn-info btn-sm ml-1" title="Ensure 6 exercises">
+                    <i class="fa fa-sync"></i> Refresh
+                    </button> -->
+                    <button type="button" wire:click="saveAllExercises" class="btn btn-success-custom btn-sm ml-2">
+                        Save 
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
