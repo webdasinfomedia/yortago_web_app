@@ -342,22 +342,22 @@
     function initializeApp() {
         if (!eventListenersAttached) {
             // Success message listener
-            // window.addEventListener('show-success', event => {
-            //     if (typeof toastr !== 'undefined') {
-            //         toastr.success(event.detail.message);
-            //     } else {
-            //         alert('Success: ' + event.detail.message);
-            //     }
-            // });
+            window.addEventListener('show-success', event => {
+                if (typeof toastr !== 'undefined') {
+                    toastr.success(event.detail.message);
+                } else {
+                    alert('Success: ' + event.detail.message);
+                }
+            });
 
-            // // Error message listener
-            // window.addEventListener('show-error', event => {
-            //     if (typeof toastr !== 'undefined') {
-            //         toastr.error(event.detail.message);
-            //     } else {
-            //         alert('Error: ' + event.detail.message);
-            //     }
-            // });
+            // Error message listener
+            window.addEventListener('show-error', event => {
+                if (typeof toastr !== 'undefined') {
+                    toastr.error(event.detail.message);
+                } else {
+                    alert('Error: ' + event.detail.message);
+                }
+            });
 
             // Listen for sync-week-accordion event
             window.addEventListener('sync-week-accordion', event => {
@@ -536,21 +536,6 @@
             attachWeightHandlers();
             attachValidation();
         }, 50);
-    });
-
-    // For Livewire v3 compatibility
-    document.addEventListener('livewire:init', function () {
-        Livewire.on('show-success', (event) => {
-            if (typeof toastr !== 'undefined') {
-                toastr.success(event.message || event[0].message);
-            }
-        });
-
-        Livewire.on('show-error', (event) => {
-            if (typeof toastr !== 'undefined') {
-                toastr.error(event.message || event[0].message);
-            }
-        });
     });
 
     // Global validation function
