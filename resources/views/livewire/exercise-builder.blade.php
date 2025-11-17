@@ -155,6 +155,7 @@
             .programname{
                 font-weight: 600;
                 font-size: 20px;
+                color:#333333;
             }
 
             .day-actions {
@@ -208,12 +209,15 @@
             .select2-container--default .select2-selection--single .select2-selection__rendered{
                 color:#6e6e6e !important;
                 line-height: 30px !important;
+                font-size: 14px !important;
             }
             .select2-container--default .select2-selection--single .select2-selection__clear{
                 height: 30px !important;
+                font-size: 14px !important;
             }
             .select2-container--default .select2-selection--single .select2-selection__arrow{
                 height: 30px !important;
+                font-size: 14px !important;
             }
             .card-body {
                 flex: 1 1 auto;
@@ -256,6 +260,14 @@
             }
             .select2-container--default .select2-results>.select2-results__options{
                 font-size: 14px !important;
+            }
+            .select2-container--default .select2-search--dropdown .select2-search__field {
+                color: #6e6e6e;
+                border: 1px solid #aaa;
+                font-size: 14px;
+            }
+            .btn-primary:hover{
+                color: white !important;
             }
            
         </style>
@@ -322,367 +334,389 @@
         @endif
     </div>
 
-    <script>
-        // Store accordion states
-        let accordionStates = new Map();
-    
-        document.addEventListener('DOMContentLoaded', function() {
+<script>
+    // Store accordion states - only track which ONE is open
+    let activeAccordionId = null;
+    let eventListenersAttached = false;
+
+    function initializeApp() {
+        if (!eventListenersAttached) {
+            // Success message listener
+            // window.addEventListener('show-success', event => {
+            //     if (typeof toastr !== 'undefined') {
+            //         toastr.success(event.detail.message);
+            //     } else {
+            //         alert('Success: ' + event.detail.message);
+            //     }
+            // });
+
+            // // Error message listener
+            // window.addEventListener('show-error', event => {
+            //     if (typeof toastr !== 'undefined') {
+            //         toastr.error(event.detail.message);
+            //     } else {
+            //         alert('Error: ' + event.detail.message);
+            //     }
+            // });
+
+            // Listen for sync-week-accordion event
+            window.addEventListener('sync-week-accordion', event => {
+                const weekId = event.detail.weekId;
+                
+                if (weekId) {
+                    closeAllAccordions();
+                    openAccordion(weekId);
+                    activeAccordionId = weekId;
+                } else {
+                    closeAllAccordions();
+                    activeAccordionId = null;
+                }
+            });
+
+            // Listen for jump-to-week event (for new week)
+            window.addEventListener('jump-to-week', event => {
+                const weekId = event.detail.weekId;
+                
+                setTimeout(() => {
+                    closeAllAccordions();
+                    openAccordion(weekId);
+                    activeAccordionId = weekId;
+                    
+                    // Scroll to the new week
+                    const weekElement = document.querySelector(`[onclick*="toggleAccordion(${weekId}"]`);
+                    if (weekElement) {
+                        weekElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }, 100);
+            });
+
+            // Listen for weight visibility updates from Livewire
+            window.addEventListener('update-weight-visibility', event => {
+                const { exerciseId, weight } = event.detail;
+                const weightDiv = document.getElementById('weightValueDiv' + exerciseId);
+                
+                if (weightDiv) {
+                    weightDiv.style.display = weight === 'Yes' ? 'block' : 'none';
+                }
+            });
+
+            eventListenersAttached = true;
+        }
+
+        // Initialize Select2
+        if (typeof $.fn.select2 !== 'undefined') {
             $('.searchable-select').select2({
                 placeholder: "--Select Exercise--",
                 allowClear: true,
                 width: 'auto',
                 dropdownAutoWidth: true
             });
-            
-            // Initialize accordion states
-            initAccordionStates();
-            
-            window.addEventListener('show-success', event => {
-                if (typeof toastr !== 'undefined') {
-                    toastr.success(event.detail.message);
-                } else {
-                    alert('Success: ' + event.detail.message);
-                }
-            });
-    
-            window.addEventListener('show-error', event => {
-                if (typeof toastr !== 'undefined') {
-                    toastr.error(event.detail.message);
-                } else {
-                    alert('Error: ' + event.detail.message);
-                }
-            });
-        });
-    
-        function initAccordionStates() {
-            document.querySelectorAll('[id^="weekDays"]').forEach(accordion => {
-                const weekId = accordion.id.replace('weekDays', '');
-                const isOpen = accordion.style.display === 'block';
-                accordionStates.set(weekId, isOpen);
-            });
         }
-    
-        // Simple toggle function without auto-selecting
-        function toggleAccordion(weekId, event) {
-            // Prevent if clicking on buttons
-            if (event && (event.target.closest('.week-actions') || event.target.closest('button'))) {
-                return;
-            }
-    
-            const accordion = document.getElementById('weekDays' + weekId);
+        
+        // Initialize accordion state from backend
+        initAccordionState();
+        
+        // Attach weight handlers
+        attachWeightHandlers();
+        
+        // Attach validation
+        attachValidation();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeApp();
+    });
+
+    function initAccordionState() {
+        // Get the active accordion from backend via Livewire component
+        const activeWeekId = @json($activeWeekAccordion);
+        if (activeWeekId) {
+            activeAccordionId = activeWeekId;
+            openAccordion(activeWeekId);
+        }
+    }
+
+    // Simple toggle function - ensures only ONE accordion open at a time
+    function toggleAccordion(weekId, event) {
+        // Prevent if clicking on buttons
+        if (event && (event.target.closest('.week-actions') || event.target.closest('button'))) {
+            return;
+        }
+
+        const accordion = document.getElementById('weekDays' + weekId);
+        const arrow = document.getElementById('arrow' + weekId);
+        
+        if (!accordion || !arrow) return;
+
+        // If clicking on already open accordion, close it
+        if (activeAccordionId === weekId) {
+            closeAccordion(weekId);
+            activeAccordionId = null;
+            @this.set('activeWeekAccordion', null);
+        } else {
+            // Close all accordions first
+            closeAllAccordions();
+            
+            // Open the clicked accordion
+            openAccordion(weekId);
+            activeAccordionId = weekId;
+            @this.set('activeWeekAccordion', weekId);
+        }
+    }
+
+    function openAccordion(weekId) {
+        const accordion = document.getElementById('weekDays' + weekId);
+        const arrow = document.getElementById('arrow' + weekId);
+        
+        if (accordion && arrow) {
+            accordion.style.display = 'block';
+            arrow.classList.add('rotated');
+        }
+    }
+
+    function closeAccordion(weekId) {
+        const accordion = document.getElementById('weekDays' + weekId);
+        const arrow = document.getElementById('arrow' + weekId);
+        
+        if (accordion && arrow) {
+            accordion.style.display = 'none';
+            arrow.classList.remove('rotated');
+        }
+    }
+
+    function closeAllAccordions() {
+        document.querySelectorAll('[id^="weekDays"]').forEach(acc => {
+            acc.style.display = 'none';
+            const weekId = acc.id.replace('weekDays', '');
             const arrow = document.getElementById('arrow' + weekId);
-            
-            if (!accordion || !arrow) return;
-    
-            // Simple toggle
-            const isCurrentlyOpen = accordion.style.display === 'block';
-             // Close ALL other accordions first
-            document.querySelectorAll('[id^="weekDays"]').forEach(acc => {
-                const accWeekId = acc.id.replace('weekDays', '');
-                const accArrow = document.getElementById('arrow' + accWeekId);
-                
-                if (accWeekId != weekId) { // Close others
-                    acc.style.display = 'none';
-                    if (accArrow) accArrow.classList.remove('rotated');
-                    accordionStates.set(accWeekId.toString(), false);
-                }
-            });
-            
-            if (isCurrentlyOpen) {
-                accordion.style.display = 'none';
-                arrow.classList.remove('rotated');
-                accordionStates.set(weekId.toString(), false);
-            } else {
-                accordion.style.display = 'block';
-                arrow.classList.add('rotated');
-                accordionStates.set(weekId.toString(), true);
-            }
-        }
-    
-        // Custom exercise accordion
-        function toggleAccordionExercise(exerciseId, event) {
-            if (event && (event.target.closest('button') || event.target.tagName === 'BUTTON')) {
-                return;
-            }
-    
-            const body = document.getElementById('exerciseBody' + exerciseId);
-            const arrow = document.getElementById('exerciseArrow' + exerciseId);
-    
-            if (!body) return;
-    
-            if (body.style.display === 'none' || body.style.display === '') {
-                body.style.display = 'block';
-                if (arrow) arrow.classList.add('rotated');
-            } else {
-                body.style.display = 'none';
-                if (arrow) arrow.classList.remove('rotated');
-            }
-        }
-    
-        // window.addEventListener('sync-week-accordion', event => {
-        //     const weekId = event.detail.weekId;
-            
-        //     // Update accordion states map
-        //     accordionStates.forEach((isOpen, key) => {
-        //         // Keep all other open weeks unchanged
-        //         if (key === weekId.toString()) {
-        //             accordionStates.set(key, true);
-        //         }
-        //     });
-
-        //     // Force rotation sync after selection
-        //     setTimeout(() => {
-        //         restoreAccordions();
-        //     }, 20);
-        // });
-
-        // Restore accordion states after Livewire updates
-        function restoreAccordions() {
-
-            accordionStates.forEach((isOpen, weekId) => {
-                const accordion = document.getElementById('weekDays' + weekId);
-                const arrow = document.getElementById('arrow' + weekId);
-                
-                if (accordion && arrow) {
-                    if (isOpen) {
-                        accordion.style.display = 'block';
-                        arrow.classList.add('rotated');
-                    } else {
-                        accordion.style.display = 'none';
-                        arrow.classList.remove('rotated');
-                    }
-                }
-            });
-        }
-    
-        // Initialize accordion state after Livewire loads
-        document.addEventListener('livewire:load', function () {
-            initAccordionStates(); 
+            if (arrow) arrow.classList.remove('rotated');
         });
-    
-        // Restore states after Livewire updates
-        document.addEventListener('livewire:update', function () {
-            setTimeout(restoreAccordions, 10);
-        });
-    
-        // For Livewire v3
-        document.addEventListener('livewire:updated', function () {
-            setTimeout(restoreAccordions, 10);
-        });
-    
-        // Global validation function
-        function validateField(input) {
-            const value = input.value.trim();
-            let error = "";
+    }
 
-            if (value === "") {
-                error = `${capitalize(input.name)} is required.`;
-            } else if (isNaN(value) || parseInt(value) <= 0) {
-                error = `${capitalize(input.name)} must be a number greater than 0.`;
+    // Custom exercise accordion
+    function toggleAccordionExercise(exerciseId, event) {
+        if (event && (event.target.closest('button') || event.target.tagName === 'BUTTON')) {
+            return;
+        }
+
+        const body = document.getElementById('exerciseBody' + exerciseId);
+        const arrow = document.getElementById('exerciseArrow' + exerciseId);
+
+        if (!body) return;
+
+        if (body.style.display === 'none' || body.style.display === '') {
+            body.style.display = 'block';
+            if (arrow) arrow.classList.add('rotated');
+        } else {
+            body.style.display = 'none';
+            if (arrow) arrow.classList.remove('rotated');
+        }
+    }
+
+    // Restore accordion state after Livewire updates
+    function restoreAccordionState() {
+        if (activeAccordionId) {
+            closeAllAccordions();
+            openAccordion(activeAccordionId);
+        }
+    }
+
+    // Listen for Livewire updates
+    document.addEventListener('livewire:update', function () {
+        setTimeout(() => {
+            restoreAccordionState();
+            attachWeightHandlers();
+            attachValidation();
+        }, 50);
+    });
+
+    document.addEventListener('livewire:updated', function () {
+        setTimeout(() => {
+            restoreAccordionState();
+            attachWeightHandlers();
+            attachValidation();
+        }, 50);
+    });
+
+    // For Livewire v3 compatibility
+    document.addEventListener('livewire:init', function () {
+        Livewire.on('show-success', (event) => {
+            if (typeof toastr !== 'undefined') {
+                toastr.success(event.message || event[0].message);
             }
-            else if (parseInt(value) > 999) {
-                error = `${capitalize(input.name)} cannot exceed 3 digits value.`;
+        });
+
+        Livewire.on('show-error', (event) => {
+            if (typeof toastr !== 'undefined') {
+                toastr.error(event.message || event[0].message);
+            }
+        });
+    });
+
+    // Global validation function
+    function validateField(input) {
+        const value = input.value.trim();
+        let error = "";
+
+        if (value === "") {
+            error = `${capitalize(input.name)} is required.`;
+        } else if (isNaN(value) || parseInt(value) <= 0) {
+            error = `${capitalize(input.name)} must be a number greater than 0.`;
+        } else if (parseInt(value) > 999) {
+            error = `${capitalize(input.name)} cannot exceed 3 digits value.`;
+        }
+
+        const exerciseCard = input.closest(".exercise-card");
+        const errorList = exerciseCard.querySelector(".exercise-error-list");
+        const errorContainer = errorList.parentElement;
+
+        if (error) {
+            input.classList.add("is-invalid");
+            input.value = "";
+
+            let li = errorList.querySelector(`li[data-field="${input.name}"]`);
+            if (!li) {
+                li = document.createElement("li");
+                li.setAttribute("data-field", input.name);
+                errorList.appendChild(li);
+            }
+            li.textContent = error;
+
+            errorContainer.classList.add('has-errors');
+            errorContainer.style.display = "block";
+
+            if (input.dataset.timeoutId) {
+                clearTimeout(parseInt(input.dataset.timeoutId));
             }
 
-            const exerciseCard = input.closest(".exercise-card");
-            const errorList = exerciseCard.querySelector(".exercise-error-list");
-            const errorContainer = errorList.parentElement;
-
-            if (error) {
-                input.classList.add("is-invalid");
-                input.value = "";
-
-                let li = errorList.querySelector(`li[data-field="${input.name}"]`);
-                if (!li) {
-                    li = document.createElement("li");
-                    li.setAttribute("data-field", input.name);
-                    errorList.appendChild(li);
-                }
-                li.textContent = error;
-
-                // Use class instead of inline style
-                errorContainer.classList.add('has-errors');
-                errorContainer.style.display = "block";
-
-                if (input.dataset.timeoutId) {
-                    clearTimeout(parseInt(input.dataset.timeoutId));
-                }
-
-                const timeoutId = setTimeout(() => {
-                    input.classList.remove("is-invalid");
-                    let li = errorList.querySelector(`li[data-field="${input.name}"]`);
-                    if (li) li.remove();
-
-                    // Check if there are any errors left
-                    if (errorList.children.length === 0) {
-                        errorContainer.classList.remove('has-errors');
-                        errorContainer.style.display = 'none';
-                    }
-                    
-                    delete input.dataset.timeoutId;
-                }, 10000);
-
-                input.dataset.timeoutId = timeoutId;
-            } else {
+            const timeoutId = setTimeout(() => {
                 input.classList.remove("is-invalid");
-
-                if (input.dataset.timeoutId) {
-                    clearTimeout(parseInt(input.dataset.timeoutId));
-                    delete input.dataset.timeoutId;
-                }
-
                 let li = errorList.querySelector(`li[data-field="${input.name}"]`);
                 if (li) li.remove();
 
-                // Check if there are any errors left
                 if (errorList.children.length === 0) {
                     errorContainer.classList.remove('has-errors');
                     errorContainer.style.display = 'none';
                 }
+                
+                delete input.dataset.timeoutId;
+            }, 10000);
+
+            input.dataset.timeoutId = timeoutId;
+        } else {
+            input.classList.remove("is-invalid");
+
+            if (input.dataset.timeoutId) {
+                clearTimeout(parseInt(input.dataset.timeoutId));
+                delete input.dataset.timeoutId;
+            }
+
+            let li = errorList.querySelector(`li[data-field="${input.name}"]`);
+            if (li) li.remove();
+
+            if (errorList.children.length === 0) {
+                errorContainer.classList.remove('has-errors');
+                errorContainer.style.display = 'none';
             }
         }
-    
-        function capitalize(str) {
-            return str.charAt(0).toUpperCase() + str.slice(1);
-        }
-    
-        function attachValidation() {
-            const fields = document.querySelectorAll(".exercise-field");
-            
-            fields.forEach(field => {
-                if (!field.dataset.validationAttached) {
-                    field.addEventListener("blur", function () {
-                        validateField(this);
-                    });
-                    field.dataset.validationAttached = "true";
-                }
-            });
-        }
-    
-        document.addEventListener("DOMContentLoaded", function () {
-            attachValidation();
+    }
+
+    function capitalize(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function attachValidation() {
+        const fields = document.querySelectorAll(".exercise-field");
+        
+        fields.forEach(field => {
+            if (!field.dataset.validationAttached) {
+                field.addEventListener("blur", function () {
+                    validateField(this);
+                });
+                field.dataset.validationAttached = "true";
+            }
         });
-    
-        window.addEventListener('livewire:load', function () {
-            attachValidation();
-            
+    }
+
+    // Weight field visibility handler
+    function attachWeightHandlers() {
+        // Regular exercises
+        document.querySelectorAll('[id^="exerciseWeight"]').forEach(select => {
+            const exerciseId = select.id.replace('exerciseWeight', '');
+            const weightDiv = document.getElementById('weightValueDiv' + exerciseId);
+
+            if (!weightDiv) return;
+
+            // Set initial visibility based on current value
+            weightDiv.style.display = select.value === 'Yes' ? 'block' : 'none';
+
+            // Remove old listener
+            select.removeEventListener('change', select._weightChangeHandler || (() => {}));
+
+            const handler = function() {
+                weightDiv.style.display = this.value === 'Yes' ? 'block' : 'none';
+            };
+
+            select.addEventListener('change', handler);
+            select._weightChangeHandler = handler;
+        });
+
+        // Alternate exercises
+        document.querySelectorAll('[id^="altWeight"]').forEach(select => {
+            const altId = select.id.replace('altWeight', '');
+            const weightDiv = document.getElementById('altWeightValueDiv' + altId);
+
+            if (!weightDiv) return;
+
+            // Set initial visibility
+            weightDiv.style.display = select.value === 'Yes' ? 'block' : 'none';
+
+            // Remove old listener
+            select.removeEventListener('change', select._altWeightChangeHandler || (() => {}));
+
+            const handler = function() {
+                weightDiv.style.display = this.value === 'Yes' ? 'block' : 'none';
+            };
+
+            select.addEventListener('change', handler);
+            select._altWeightChangeHandler = handler;
+        });
+    }
+
+    window.addEventListener('livewire:load', function () {
+        initializeApp();
+        
+        if (typeof Livewire !== 'undefined' && Livewire.hook) {
             Livewire.hook('message.processed', (message, component) => {
                 setTimeout(() => {
                     attachValidation();
+                    attachWeightHandlers();
                 }, 100);
             });
-           
-              // Weight select handlers
-            // @foreach($exerciseLists as $exercise)
-            //     let weightSelect{{ $exercise['id'] }} = document.querySelector('#exerciseWeight{{ $exercise['id'] }}');
-            //     let weightDiv{{ $exercise['id'] }} = document.querySelector('#weightValueDiv{{ $exercise['id'] }}');
-    
-            //     if(weightSelect{{ $exercise['id'] }}) {
-            //         weightSelect{{ $exercise['id'] }}.addEventListener('change', function() {
-            //             if(this.value === 'Yes') {
-            //                 weightDiv{{ $exercise['id'] }}.style.display = 'block';
-            //             } else {
-            //                 weightDiv{{ $exercise['id'] }}.style.display = 'none';
-            //             }
-            //         });
-            //     }
-            // @endforeach
-            
-            // document.addEventListener('change', function(e) {
-            //     if (e.target.id && e.target.id.startsWith('altWeight')) {
-            //         const alternateId = e.target.id.replace('altWeight', '');
-            //         const weightDiv = document.getElementById('altWeightValueDiv' + alternateId);
-                    
-            //         if (weightDiv) {
-            //             weightDiv.style.display = e.target.value === 'Yes' ? 'block' : 'none';
-            //         }
-            //     }
-            // });
-        });
-    
-        if (typeof MutationObserver !== 'undefined') {
-            const observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.addedNodes.length) {
-                        attachValidation();
-                    }
-                });
-            });
-    
-            document.addEventListener("DOMContentLoaded", function() {
-                const targetNode = document.querySelector('.exercise-content');
-                if (targetNode) {
-                    observer.observe(targetNode, {
-                        childList: true,
-                        subtree: true
-                    });
-                }
-            });
         }
-        // Add this after the other event listeners in DOMContentLoaded
-        window.addEventListener('exercise-updated', event => {
-            // Force a small delay to ensure DOM updates
-            setTimeout(() => {
-                // Trigger Livewire to re-render the component
-                if (typeof Livewire !== 'undefined') {
-                    Livewire.emit('$refresh');
+    });
+
+    if (typeof MutationObserver !== 'undefined') {
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes.length) {
+                    attachValidation();
+                    attachWeightHandlers();
                 }
-            }, 100);
+            });
         });
-        function attachWeightHandlers() {
-    // Regular exercises
-    document.querySelectorAll('[id^="exerciseWeight"]').forEach(select => {
-        const exerciseId = select.id.replace('exerciseWeight', '');
-        const weightDiv = document.getElementById('weightValueDiv' + exerciseId);
 
-        if (!weightDiv) return;
-
-        // Set initial visibility (in case Livewire re-rendered)
-        weightDiv.style.display = select.value === 'Yes' ? 'block' : 'none';
-
-        // Remove old listener (to prevent multiple bindings)
-        select.removeEventListener('change', select._weightChangeHandler || (() => {}));
-
-        // Define and store a new handler
-        const handler = function() {
-            weightDiv.style.display = this.value === 'Yes' ? 'block' : 'none';
-        };
-
-        select.addEventListener('change', handler);
-        select._weightChangeHandler = handler;
-    });
-
-    // Alternate exercises
-    document.querySelectorAll('[id^="altWeight"]').forEach(select => {
-        const altId = select.id.replace('altWeight', '');
-        const weightDiv = document.getElementById('altWeightValueDiv' + altId);
-
-        if (!weightDiv) return;
-
-        // Set initial visibility
-        weightDiv.style.display = select.value === 'Yes' ? 'block' : 'none';
-
-        // Remove old listener
-        select.removeEventListener('change', select._altWeightChangeHandler || (() => {}));
-
-        const handler = function() {
-            weightDiv.style.display = this.value === 'Yes' ? 'block' : 'none';
-        };
-
-        select.addEventListener('change', handler);
-        select._altWeightChangeHandler = handler;
-    });
-}
-
-// Run after page load
-document.addEventListener('DOMContentLoaded', attachWeightHandlers);
-
-// Run after any Livewire DOM update
-document.addEventListener('livewire:update', () => setTimeout(attachWeightHandlers, 50));
-document.addEventListener('livewire:load', () => setTimeout(attachWeightHandlers, 50));
-document.addEventListener('livewire:updated', () => setTimeout(attachWeightHandlers, 50));
-
-    </script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const targetNode = document.querySelector('.exercise-content');
+            if (targetNode) {
+                observer.observe(targetNode, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+        });
+    }
+</script>
 
     <!-- Success/Error Messages -->
     @if (session()->has('message'))

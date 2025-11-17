@@ -1,9 +1,10 @@
 <style>
-/*   @media only screen and (max-width: 575px) {*/
-/*    .nav-control {*/
-        right: 0.5rem !important; /* Keep visible */
-/*    }*/
-/*}*/
+    @media only screen and (max-width: 575px) {
+    .nav-control {
+        right: -3.75rem;
+    }
+}
+
 </style>
 <div class="header">
     <div class="header-content">
@@ -14,10 +15,22 @@
                         @yield('admin_title')
                     </div>
                 </div>
-
+                
                 <ul class="navbar-nav header-right">
 
-
+                     <li class="nav-item">
+                        @if(Request::is('admin/notifications*'))
+                            <div class="notification">
+                                <i class="la la-bell la-solid"></i>
+                                @php
+                                    $unreadCount = \App\Models\Notification::where('is_read', false)->count();
+                                @endphp
+                                @if($unreadCount > 0)
+                                    <span>{{ $unreadCount }}</span>
+                                @endif
+                            </div>
+                        @endif
+                    </li>
                     <li class="nav-item dropdown header-profile">
                         <a class="nav-link" href="#" role="button" data-toggle="dropdown">
                             @if(auth()->user())
@@ -66,3 +79,4 @@
         </nav>
     </div>
 </div>
+

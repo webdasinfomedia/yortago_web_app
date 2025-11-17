@@ -282,12 +282,7 @@ private function loadWeeks()
     {
         $this->selectedWeekId = $weekId;
         $this->activeWeekAccordion = $weekId;
-        
-        // Remove this auto-selection
-        // $week = collect($this->weeks)->firstWhere('id', $weekId);
-        // if ($week && !empty($week['days'])) {
-        //     $this->selectedDayId = $week['days'][0]['id'];
-        // }
+        $this->dispatch('close-other-accordions', weekId: $weekId);
     }
     
     public function selectDay($dayId)
@@ -301,7 +296,7 @@ private function loadWeeks()
                     $this->selectedWeekId = $week['id'];
                     $this->activeWeekAccordion = $week['id'];
                     
-                    // Dispatch event to JavaScript to sync accordion state
+                    // Dispatch event to sync accordion state
                     $this->dispatch('sync-week-accordion', weekId: $week['id']);
                     break 2;
                 }
@@ -320,11 +315,13 @@ private function loadWeeks()
             // Collapse if same week clicked
             $this->activeWeekAccordion = null;
         } else {
-            // Open clicked week without auto-selecting day
+            // Open clicked week and close all others
             $this->activeWeekAccordion = $weekId;
             $this->selectedWeekId = $weekId;
-            // Don't auto-select first day - let user click on it
         }
+        
+        // Dispatch to sync accordion state
+        $this->dispatch('sync-week-accordion', weekId: $this->activeWeekAccordion);
     }
 
     /**
@@ -397,8 +394,13 @@ private function loadWeeks()
 
         $this->ensureWeekHasDays($week);
         $this->loadWeeks();
+        
+        // Set the new week as active and open its accordion
         $this->selectedWeekId = $week->id;
         $this->activeWeekAccordion = $week->id;
+        
+        // Dispatch to open only this accordion
+        $this->dispatch('jump-to-week', weekId: $week->id);
         $this->dispatch('show-success', message: 'New week added successfully!');
     }
 
@@ -546,7 +548,7 @@ private function loadWeeks()
     public function updateExercise($exerciseId, $field, $value)
     {
         $exercise = NewExerciseWeekDayItem::findOrFail($exerciseId);
-    
+
         // If updating exercise_list_id, preload weight and notes from ExerciseList
         if ($field === 'exercise_list_id' && !empty($value)) {
             $exerciseList = ExerciseList::find($value);
@@ -556,14 +558,28 @@ private function loadWeeks()
                     'exercise_list_id' => $value,
                     'name' => $exerciseList->name,
                     'weight' => $exerciseList->weight ?? 'No',
-                    'weight_value' => $exerciseList->weight_value ?? '',
+                    'weight_value' => $exerciseList->weight_value ?? null,
                     'notes' => $exerciseList->notes ?? '',
+                ]);
+                
+                // Dispatch event to update weight field visibility
+                $this->dispatch('update-weight-visibility', [
+                    'exerciseId' => $exerciseId,
+                    'weight' => $exerciseList->weight ?? 'No'
                 ]);
             } else {
                 $exercise->update(['exercise_list_id' => $value]);
             }
         } else {
             $exercise->update([$field => $value]);
+            
+            // If weight field is updated, dispatch visibility event
+            if ($field === 'weight') {
+                $this->dispatch('update-weight-visibility', [
+                    'exerciseId' => $exerciseId,
+                    'weight' => $value
+                ]);
+            }
         }
         
         // Always reload after update to recalculate has_available_alternates
