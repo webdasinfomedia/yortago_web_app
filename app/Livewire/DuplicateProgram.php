@@ -1400,89 +1400,289 @@ private function copyAlternateExercises($sourceExercise, $targetExercise)
         return $this->isProcessing;
     }
 
-    private function copyToExistingProgram()
-    {
-        try {
-            $this->validate([
-                'selectedExistingProgram' => 'required|exists:new_exercises,id',
-            ]);
+private function copyToExistingProgram()
+{
+    try {
+        $this->validate([
+            'selectedExistingProgram' => 'required|exists:new_exercises,id',
+        ]);
 
-            $targetProgram = NewExercise::findOrFail($this->selectedExistingProgram);
+        $targetProgram = NewExercise::findOrFail($this->selectedExistingProgram);
 
-            foreach ($this->mappings as $mapping) {
-                if ($mapping['type'] === 'fullWeek') {
-                    $targetWeekNum = (int)$mapping['targetWeek'];
-
-                    $targetWeek = NewExerciseWeek::updateOrCreate(
-                        ['new_exercise_id' => $targetProgram->id, 'week_number' => $targetWeekNum],
-                        []
-                    );
-
-                    if ($targetWeek->days()->count() === 0) {
-                        $this->createDefaultDays($targetWeek->id);
-                    }
-
-                    $this->copyFullWeek($mapping['sourceWeekId'], $targetWeek->id);
-                } elseif ($mapping['type'] === 'fullDay') {
-                    $targetWeekNum = (int)$mapping['targetWeek'];
-                    $targetDayNum = (int)$mapping['targetDay'];
-
-                    $targetWeek = NewExerciseWeek::updateOrCreate(
-                        ['new_exercise_id' => $targetProgram->id, 'week_number' => $targetWeekNum],
-                        []
-                    );
-
-                    if ($targetWeek->days()->count() === 0) {
-                        $this->createDefaultDays($targetWeek->id);
-                    }
-
-                    $this->copyFullDay($mapping['sourceDayId'], $targetWeek->id, $targetDayNum);
-                } elseif ($mapping['type'] === 'exercises') {
-                    // Group exercises by their target location
-                    $exercisesByTarget = [];
-                    foreach ($mapping['exercises'] as $ex) {
-                        $targetWeekNum = (int)$ex['targetWeek'];
-                        $targetDayNum = (int)$ex['targetDay'];
-                        $key = "{$targetWeekNum}_{$targetDayNum}";
-
-                        if (!isset($exercisesByTarget[$key])) {
-                            $exercisesByTarget[$key] = [
-                                'week' => $targetWeekNum,
-                                'day' => $targetDayNum,
-                                'exercises' => []
-                            ];
-                        }
-                        $exercisesByTarget[$key]['exercises'][] = $ex;
-                    }
-
-                    // Process each target location
-                    foreach ($exercisesByTarget as $target) {
-                        $targetWeek = NewExerciseWeek::updateOrCreate(
-                            ['new_exercise_id' => $targetProgram->id, 'week_number' => $target['week']],
-                            []
-                        );
-
-                        if ($targetWeek->days()->count() === 0) {
-                            $this->createDefaultDays($targetWeek->id);
-                        }
-
-                        foreach ($target['exercises'] as $ex) {
-                            $this->copySingleExercise($ex['id'], $targetWeek->id, $target['day']);
-                        }
-                    }
-                }
+        foreach ($this->mappings as $mapping) {
+            if ($mapping['type'] === 'fullWeek') {
+                $this->copyFullWeekToExisting($mapping, $targetProgram);
+            } elseif ($mapping['type'] === 'fullDay') {
+                $this->copyFullDayToExisting($mapping, $targetProgram);
+            } elseif ($mapping['type'] === 'exercises') {
+                $this->copyExercisesToExisting($mapping, $targetProgram);
             }
+        }
 
-            $this->closeCopyModal();
-            $this->reset(['selectedWeeks', 'selectedDays', 'selectedExercises', 'mappings']);
+        $this->closeCopyModal();
+        $this->reset(['selectedWeeks', 'selectedDays', 'selectedExercises', 'mappings']);
 
-            session()->flash('success', 'Exercises copied successfully!');
-            return redirect('/admin/new/exercise/manage')->with('message', 'Program copied successfully!');
-        } catch (\Exception $e) {
+        session()->flash('success', 'Exercises copied successfully!');
+        return redirect('/admin/new/exercise/manage')->with('message', 'Program copied successfully!');
+    } catch (\Exception $e) {
+        $this->dispatch('show-error', message: 'Error: ' . $e->getMessage());
+    }
+}
 
-            $this->dispatch('show-error', message: 'Error: ' . $e->getMessage());
+/**
+ * Copy full week to existing program
+ */
+private function copyFullWeekToExisting($mapping, $targetProgram)
+{
+    $targetWeekNum = (int)$mapping['targetWeek'];
+    
+    // Get or create target week
+    $targetWeek = NewExerciseWeek::firstOrCreate(
+        ['new_exercise_id' => $targetProgram->id, 'week_number' => $targetWeekNum],
+        ['created_at' => now(), 'updated_at' => now()]
+    );
+
+    // Load source week with all data including alternates
+    $sourceWeek = NewExerciseWeek::with('days.exerciseItems.alternateExercises')
+        ->findOrFail($mapping['sourceWeekId']);
+
+    // Delete existing days in target week to avoid conflicts
+    NewExerciseWeekDay::where('new_exercise_week_id', $targetWeek->id)->delete();
+
+    // Copy all days from source
+    foreach ($sourceWeek->days as $sourceDay) {
+        $this->copyDayContent($sourceDay, $targetWeek);
+    }
+}
+
+/**
+ * Copy full day to existing program
+ */
+private function copyFullDayToExisting($mapping, $targetProgram)
+{
+    $targetWeekNum = (int)$mapping['targetWeek'];
+    $targetDayNum = (int)$mapping['targetDay'];
+
+    // Get or create target week
+    $targetWeek = NewExerciseWeek::firstOrCreate(
+        ['new_exercise_id' => $targetProgram->id, 'week_number' => $targetWeekNum],
+        ['created_at' => now(), 'updated_at' => now()]
+    );
+
+    // Load source day with alternates
+    $sourceDay = NewExerciseWeekDay::with('exerciseItems.alternateExercises')
+        ->findOrFail($mapping['sourceDayId']);
+
+    // Get or create target day
+    $targetDay = NewExerciseWeekDay::where('new_exercise_week_id', $targetWeek->id)
+        ->where('day_number', $targetDayNum)
+        ->first();
+
+    if ($targetDay) {
+        // Delete existing exercises in target day
+        $targetDay->exerciseItems()->delete();
+        
+        // Update day metadata
+        $targetDay->update([
+            'title' => $sourceDay->title,
+            'summary' => $sourceDay->summary,
+            'duration' => $sourceDay->duration,
+        ]);
+    } else {
+        // Create new day
+        $targetDay = NewExerciseWeekDay::create([
+            'new_exercise_week_id' => $targetWeek->id,
+            'day_number' => $targetDayNum,
+            'title' => $sourceDay->title,
+            'summary' => $sourceDay->summary,
+            'duration' => $sourceDay->duration,
+        ]);
+    }
+
+    // Copy all exercises
+    $this->copyDayExercises($sourceDay, $targetDay);
+}
+
+/**
+ * Copy individual exercises to existing program
+ */
+private function copyExercisesToExisting($mapping, $targetProgram)
+{
+    // Group exercises by target location
+    $exercisesByTarget = [];
+    foreach ($mapping['exercises'] as $ex) {
+        $targetWeekNum = (int)$ex['targetWeek'];
+        $targetDayNum = (int)$ex['targetDay'];
+        $key = "{$targetWeekNum}_{$targetDayNum}";
+
+        if (!isset($exercisesByTarget[$key])) {
+            $exercisesByTarget[$key] = [
+                'week' => $targetWeekNum,
+                'day' => $targetDayNum,
+                'exercises' => []
+            ];
+        }
+        $exercisesByTarget[$key]['exercises'][] = $ex['id'];
+    }
+
+    // Process each target location
+    foreach ($exercisesByTarget as $target) {
+        $targetWeek = NewExerciseWeek::firstOrCreate(
+            ['new_exercise_id' => $targetProgram->id, 'week_number' => $target['week']],
+            ['created_at' => now(), 'updated_at' => now()]
+        );
+
+        $targetDay = NewExerciseWeekDay::firstOrCreate(
+            ['new_exercise_week_id' => $targetWeek->id, 'day_number' => $target['day']],
+            [
+                'title' => "Day {$target['day']} Workout",
+                'summary' => '',
+                'duration' => 30,
+            ]
+        );
+
+        foreach ($target['exercises'] as $exerciseId) {
+            $this->copyIndividualExercise($exerciseId, $targetDay);
         }
     }
+}
+
+/**
+ * Copy day content helper
+ */
+private function copyDayContent($sourceDay, $targetWeek)
+{
+    $newDay = NewExerciseWeekDay::create([
+        'new_exercise_week_id' => $targetWeek->id,
+        'day_number' => $sourceDay->day_number,
+        'title' => $sourceDay->title,
+        'summary' => $sourceDay->summary,
+        'duration' => $sourceDay->duration,
+    ]);
+
+    $this->copyDayExercises($sourceDay, $newDay);
+}
+
+/**
+ * Copy all exercises from source day to target day
+ */
+private function copyDayExercises($sourceDay, $targetDay)
+{
+    foreach ($sourceDay->exerciseItems as $exercise) {
+        $newExercise = NewExerciseWeekDayItem::create([
+            'new_exercise_week_day_id' => $targetDay->id,
+            'item_id' => $exercise->item_id,
+            'exercise_list_id' => $exercise->exercise_list_id,
+            'name' => $exercise->name ?? '',
+            'sets' => $exercise->sets ?? '',
+            'reps' => $exercise->reps ?? '',
+            'rest' => $exercise->rest ?? '',
+            'tempo' => $exercise->tempo ?? '',
+            'intensity' => $exercise->intensity ?? 'Moderate',
+            'weight' => $exercise->weight ?? 'Yes',
+            'weight_value' => $exercise->weight_value ?? '',
+            'notes' => $exercise->notes ?? ''
+        ]);
+
+        // Copy alternate exercises
+        if ($exercise->alternateExercises && $exercise->alternateExercises->count() > 0) {
+            foreach ($exercise->alternateExercises as $alternate) {
+                $newExercise->alternateExercises()->attach($alternate->id, [
+                    'sets' => $alternate->pivot->sets ?? null,
+                    'reps' => $alternate->pivot->reps ?? null,
+                    'rest' => $alternate->pivot->rest ?? null,
+                    'tempo' => $alternate->pivot->tempo ?? null,
+                    'intensity' => $alternate->pivot->intensity ?? null,
+                    'weight' => $alternate->pivot->weight ?? $alternate->weight ?? 'No',
+                    'weight_value' => $alternate->pivot->weight_value ?? $alternate->weight_value ?? null,
+                    'notes' => $alternate->pivot->notes ?? $alternate->notes ?? null,
+                ]);
+            }
+        }
+    }
+}
+
+/**
+ * Copy individual exercise to target day
+ */
+private function copyIndividualExercise($exerciseId, $targetDay)
+{
+    $sourceExercise = NewExerciseWeekDayItem::with('alternateExercises')->findOrFail($exerciseId);
+
+    // Check if exercise has meaningful data
+    if (
+        empty($sourceExercise->exercise_list_id)
+        && empty($sourceExercise->sets)
+        && empty($sourceExercise->reps)
+        && empty($sourceExercise->rest)
+    ) {
+        return;
+    }
+
+    // Find first empty exercise slot in target day
+    $emptyExercise = NewExerciseWeekDayItem::where('new_exercise_week_day_id', $targetDay->id)
+        ->where(function ($query) {
+            $query->where(function ($q) {
+                $q->whereNull('exercise_list_id')
+                  ->orWhere('exercise_list_id', '');
+            })
+            ->where(function ($q) {
+                $q->whereNull('sets')
+                  ->orWhere('sets', '');
+            })
+            ->where(function ($q) {
+                $q->whereNull('reps')
+                  ->orWhere('reps', '');
+            })
+            ->where(function ($q) {
+                $q->whereNull('rest')
+                  ->orWhere('rest', '');
+            });
+        })
+        ->orderBy('item_id', 'asc')
+        ->first();
+
+    if ($emptyExercise) {
+        // Update existing empty slot
+        $emptyExercise->update([
+            'exercise_list_id' => $sourceExercise->exercise_list_id,
+            'name' => $sourceExercise->name,
+            'sets' => $sourceExercise->sets,
+            'reps' => $sourceExercise->reps,
+            'rest' => $sourceExercise->rest,
+            'tempo' => $sourceExercise->tempo,
+            'intensity' => $sourceExercise->intensity,
+            'weight' => $sourceExercise->weight,
+            'weight_value' => $sourceExercise->weight_value,
+            'notes' => $sourceExercise->notes,
+        ]);
+
+        // Copy alternates to updated exercise
+        $this->copyAlternateExercises($sourceExercise, $emptyExercise);
+    } else {
+        // Create new exercise
+        $maxItemId = NewExerciseWeekDayItem::where('new_exercise_week_day_id', $targetDay->id)
+            ->max('item_id') ?? 0;
+
+        $newExercise = NewExerciseWeekDayItem::create([
+            'new_exercise_week_day_id' => $targetDay->id,
+            'item_id' => $maxItemId + 1,
+            'exercise_list_id' => $sourceExercise->exercise_list_id,
+            'name' => $sourceExercise->name,
+            'sets' => $sourceExercise->sets,
+            'reps' => $sourceExercise->reps,
+            'rest' => $sourceExercise->rest,
+            'tempo' => $sourceExercise->tempo,
+            'intensity' => $sourceExercise->intensity,
+            'weight' => $sourceExercise->weight,
+            'weight_value' => $sourceExercise->weight_value,
+            'notes' => $sourceExercise->notes,
+        ]);
+
+        // Copy alternates to new exercise
+        $this->copyAlternateExercises($sourceExercise, $newExercise);
+    }
+}
 
     // New helper method to get max target week
 private function getMaxTargetWeek()
@@ -1614,82 +1814,80 @@ private function processMappingsBatch($createdWeeks)
     }
 
     /**  get available days in  a week */
-    private function getWeekDayAvailability($programId)
-    {
-        $availability = [];
+   private function getWeekDayAvailability($programId)
+{
+    $availability = [];
 
-        for ($weekNum = 1; $weekNum <= 12; $weekNum++) {
-            $week = NewExerciseWeek::where('new_exercise_id', $programId)
-                ->where('week_number', $weekNum)
+    for ($weekNum = 1; $weekNum <= 12; $weekNum++) {
+        $week = NewExerciseWeek::where('new_exercise_id', $programId)
+            ->where('week_number', $weekNum)
+            ->first();
+
+        if (!$week) {
+            // Week doesn't exist - completely available
+            $availability[$weekNum] = [
+                'available' => true,
+                'days' => array_fill(1, 7, true),
+                'takenDays' => 0,
+                'hasAnyDay' => false
+            ];
+            continue;
+        }
+
+        $dayAvailability = [];
+        $allDaysTaken = 0;
+        $hasAnyFilledDay = false;
+
+        for ($dayNum = 1; $dayNum <= 7; $dayNum++) {
+            $day = NewExerciseWeekDay::where('new_exercise_week_id', $week->id)
+                ->where('day_number', $dayNum)
                 ->first();
 
-            if (!$week) {
-                // Week doesn't exist - all days available
-                $availability[$weekNum] = [
-                    'available' => true,
-                    'days' => array_fill(1, 7, true),
-                    'takenDays' => 0,
-                    'hasAnyDay' => false // NEW: Track if week has any days at all
-                ];
-            } else {
-                $dayAvailability = [];
-                $hasAvailableDay = false;
-                $allDaysTaken = 0;
-                $hasAnyFilledDay = false; // NEW: Track if any day has exercises
+            if (!$day) {
+                // Day doesn't exist - available
+                $dayAvailability[$dayNum] = true;
+                continue;
+            }
 
-                for ($dayNum = 1; $dayNum <= 7; $dayNum++) {
-                    $day = NewExerciseWeekDay::where('new_exercise_week_id', $week->id)
-                        ->where('day_number', $dayNum)
-                        ->first();
+            // Check if day has ANY exercise with actual data
+            $hasFilledExercises = NewExerciseWeekDayItem::where('new_exercise_week_day_id', $day->id)
+                ->where(function ($query) {
+                    $query->whereNotNull('exercise_list_id')
+                        ->where('exercise_list_id', '!=', '')
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('sets')
+                              ->where('sets', '!=', '');
+                        })
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('reps')
+                              ->where('reps', '!=', '');
+                        })
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('rest')
+                              ->where('rest', '!=', '');
+                        });
+                })
+                ->exists();
 
-                    if (!$day) {
-                        $dayAvailability[$dayNum] = true;
-                        $hasAvailableDay = true;
-                    } else {
-                        // Check if any exercise has meaningful data
-                        $hasFilledExercises = NewExerciseWeekDayItem::where('new_exercise_week_day_id', $day->id)
-                            ->where(function ($q) {
-                                $q->whereNotNull('exercise_list_id')
-                                    ->orWhere(function ($q2) {
-                                        $q2->where('sets', '!=', '')
-                                            ->whereNotNull('sets');
-                                    })
-                                    ->orWhere(function ($q3) {
-                                        $q3->where('reps', '!=', '')
-                                            ->whereNotNull('reps');
-                                    })
-                                    ->orWhere(function ($q4) {
-                                        $q4->where('rest', '!=', '')
-                                            ->whereNotNull('rest');
-                                    });
-                            })
-                            ->exists();
-
-                        $dayAvailability[$dayNum] = !$hasFilledExercises;
-                        
-                        if ($hasFilledExercises) {
-                            $allDaysTaken++;
-                            $hasAnyFilledDay = true; // NEW: Mark that week has at least one filled day
-                        } else {
-                            $hasAvailableDay = true;
-                        }
-                    }
-                }
-
-                // Week is NOT available for FULL WEEK copy if:
-                // 1. Any day has filled exercises (even 1 day) - for full week copy
-                // 2. But individual days can still be added to available slots
-                $availability[$weekNum] = [
-                    'available' => !$hasAnyFilledDay, // Week available for FULL WEEK copy only if NO days have exercises
-                    'days' => $dayAvailability,
-                    'takenDays' => $allDaysTaken,
-                    'hasAnyDay' => $hasAnyFilledDay // NEW: Track if week has any filled days
-                ];
+            $dayAvailability[$dayNum] = !$hasFilledExercises;
+            
+            if ($hasFilledExercises) {
+                $allDaysTaken++;
+                $hasAnyFilledDay = true;
             }
         }
 
-        return $availability;
+        // Week is available for FULL WEEK copy only if NO days have filled exercises
+        $availability[$weekNum] = [
+            'available' => !$hasAnyFilledDay,
+            'days' => $dayAvailability,
+            'takenDays' => $allDaysTaken,
+            'hasAnyDay' => $hasAnyFilledDay
+        ];
     }
+
+    return $availability;
+}
 
     // Update getSelectionCount to only count filled exercises
     public function getSelectionCount()
