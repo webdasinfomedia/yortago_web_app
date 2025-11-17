@@ -109,6 +109,10 @@
     /* color: white; */
     text-decoration: underline !important;
 }
+
+.table-responsive tbody tr td, .text-muted{
+    color: #333333 !important;
+}
 /* @media only screen and (min-width: 767px) and (max-width: 1300px) {
    .hamburger {
     display: inline-block !important;

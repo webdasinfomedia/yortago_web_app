@@ -339,6 +339,30 @@
     let activeAccordionId = null;
     let eventListenersAttached = false;
 
+    function initializeSelect2() {
+        // Destroy existing Select2 instances first
+        $('.searchable-select').each(function() {
+            if ($(this).data('select2')) {
+                $(this).select2('destroy');
+            }
+        });
+
+        // Reinitialize all Select2 dropdowns
+        $('.searchable-select').select2({
+            placeholder: "-Select Exercise-",
+            allowClear: true,
+            width: '100%',
+            dropdownAutoWidth: true
+        });
+
+        // Handle Livewire updates for Select2
+        $('.searchable-select').on('change', function() {
+            const value = $(this).val();
+            const exerciseId = $(this).closest('.exercise-card').find('[id^="exerciseBody"]').attr('id').replace('exerciseBody', '');
+            @this.call('updateExercise', exerciseId, 'exercise_list_id', value);
+        });
+    }
+
     function initializeApp() {
         if (!eventListenersAttached) {
             // Success message listener
@@ -405,12 +429,7 @@
 
         // Initialize Select2
         if (typeof $.fn.select2 !== 'undefined') {
-            $('.searchable-select').select2({
-                placeholder: "--Select Exercise--",
-                allowClear: true,
-                width: 'auto',
-                dropdownAutoWidth: true
-            });
+            initializeSelect2();
         }
         
         // Initialize accordion state from backend
@@ -519,6 +538,9 @@
             closeAllAccordions();
             openAccordion(activeAccordionId);
         }
+        setTimeout(() => {
+            initializeSelect2();
+        }, 100);
     }
 
     // Listen for Livewire updates
@@ -527,6 +549,7 @@
             restoreAccordionState();
             attachWeightHandlers();
             attachValidation();
+            initializeSelect2();
         }, 50);
     });
 
@@ -535,6 +558,7 @@
             restoreAccordionState();
             attachWeightHandlers();
             attachValidation();
+            initializeSelect2();
         }, 50);
     });
 
@@ -676,6 +700,7 @@
                 setTimeout(() => {
                     attachValidation();
                     attachWeightHandlers();
+                    initializeSelect2();
                 }, 100);
             });
         }
@@ -687,6 +712,13 @@
                 if (mutation.addedNodes.length) {
                     attachValidation();
                     attachWeightHandlers();
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === 1 && (node.classList.contains('exercise-card') || node.querySelector('.searchable-select'))) {
+                            setTimeout(() => {
+                                initializeSelect2();
+                            }, 50);
+                        }
+                    });
                 }
             });
         });
@@ -888,7 +920,7 @@
                                     <label class="form-label">Exercise List</label>
                                     <select class="form-control form-control-sm searchable-select"
                                             wire:change="updateExercise({{ $exercise['id'] }}, 'exercise_list_id', $event.target.value)">
-                                        <option value="">--Select Exercise--</option>
+                                        <option value="">-Select Exercise-</option>
                                         @foreach($exerciseLists as $list)
                                             <option value="{{ $list->id }}" {{ $exercise['exercise_list_id'] == $list->id ? 'selected' : '' }}>
                                                 {{ $list->name }}
@@ -934,7 +966,7 @@
                                     <label class="form-label">Intensity</label>
                                     <select class="form-control form-control-sm"
                                             wire:change="updateExercise({{ $exercise['id'] }}, 'intensity', $event.target.value)">
-                                        <option value="">--Select Intensity--</option>
+                                        <option value="">-Select Intensity-</option>
                                         <option value="Low" {{ $exercise['intensity'] === 'Low' ? 'selected' : '' }}>Low</option>
                                         <option value="Moderate" {{ $exercise['intensity'] === 'Moderate' ? 'selected' : '' }}>Moderate</option>
                                         <option value="High" {{ $exercise['intensity'] === 'High' ? 'selected' : '' }}>High</option>
@@ -946,7 +978,7 @@
                                     <label class="form-label">Weight</label>
                                     <select class="form-control form-control-sm" id="exerciseWeight{{ $exercise['id'] }}"
                                             wire:change="updateExercise({{ $exercise['id'] }}, 'weight', $event.target.value)">
-                                        <option value="">--Select Weight--</option>
+                                        <option value="">-Select Weight-</option>
                                         <option value="Yes" {{ $exercise['weight'] === 'Yes' ? 'selected' : '' }}>Yes</option>
                                         <option value="No" {{ $exercise['weight'] === 'No' ? 'selected' : '' }}>No</option>
                                     </select>
@@ -979,7 +1011,7 @@
                             </div>
 
                            
-                           <!-- Alternate Exercise Button -->
+
                             <!-- Alternate Exercise Button -->
                         @if($exercise['exercise_list_id'] && $exercise['has_available_alternates'])
                             <div class="row mt-2">
@@ -1074,7 +1106,7 @@
                                                 <label class="form-label">Weight</label>
                                                 <select class="form-control form-control-sm" 
                                                         wire:model.defer="alternates.{{ $alternate['id'] }}.weight">
-                                                    <option value="">-- Select --</option>
+                                                    <option value="">-Select-</option>
                                                     <option value="Yes">Yes</option>
                                                     <option value="No">No</option>
                                                 </select>

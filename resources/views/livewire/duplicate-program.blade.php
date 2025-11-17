@@ -400,10 +400,10 @@
                                 @foreach($mappings as $key => $mapping)
                                     <div class="card mb-3 border">
                                         
-                                        {{-- FULL WEEK --}}
+                                       {{-- FULL WEEK MAPPING --}}
                                         @if($mapping['type'] === 'fullWeek')
                                             <div class="card-header text-white py-2">
-                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="d-flex justify-content-between align-items-center">
                                                     <span class="font-weight-bold mr-3">
                                                         Week {{ $mapping['sourceWeekNumber'] }} (Full Week - All Days)
                                                     </span>
@@ -413,196 +413,138 @@
                                                         <select class="form-control form-control-sm" 
                                                             wire:model.live="mappings.{{ $key }}.targetWeek"
                                                             style="width: 130px;">
-                                                        <option value="">Select</option>
-                                                        @for($w = 1; $w <= 12; $w++)
-                                                            @php
-                                                                $weekAvailable = true;
-                                                                $isUsedByOther = false;
-                                                                
-                                                                // Check if week is used by another full week mapping
-                                                                foreach($mappings as $otherKey => $otherMapping) {
-                                                                    if($otherKey !== $key && 
-                                                                    $otherMapping['type'] === 'fullWeek' && 
-                                                                    isset($otherMapping['targetWeek']) && 
-                                                                    $otherMapping['targetWeek'] == $w) {
-                                                                        $isUsedByOther = true;
-                                                                        break;
-                                                                    }
-                                                                }
-                                                                
-                                                                // Check availability in existing program
-                                                                if($copyMode === 'existing' && $selectedExistingProgram && !empty($weekDayAvailability)) {
-                                                                    $weekAvailable = $weekDayAvailability[$w]['available'] ?? false;
-                                                                }
-                                                                
-                                                                $isDisabled = !$weekAvailable || $isUsedByOther;
-                                                            @endphp
-                                                            <option value="{{ $w }}" 
-                                                                    {{ $isDisabled ? 'disabled' : '' }}
-                                                                    class="{{ $isUsedByOther ? 'taken-slot' : '' }}">
-                                                                Week {{ $w }} 
-                                                                @if(!$weekAvailable && $copyMode === 'existing')
-                                                                    (No Slots)
-                                                                @elseif($isUsedByOther)
-                                                                    (Already Selected)
-                                                                @endif
-                                                            </option>
-                                                        @endfor
-                                                    </select>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            @php
-                                                    $currentTarget = $mapping['targetWeek'] ?? null;
-                                                    $isDuplicate = false;
-                                                    $duplicateSource = null;
-                                                    
-                                                    if($currentTarget) {
-                                                        foreach($mappings as $otherKey => $otherMapping) {
-                                                            if($otherKey !== $key && 
-                                                            $otherMapping['type'] === 'fullWeek' && 
-                                                            isset($otherMapping['targetWeek']) && 
-                                                            $otherMapping['targetWeek'] == $currentTarget) {
-                                                                $isDuplicate = true;
-                                                                $duplicateSource = "Week " . $otherMapping['sourceWeekNumber'];
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-                                                @endphp
-                                            <div class="card-body p-2">
-                                                <small class="text-muted">All days with all exercises will be copied</small>
-                                                @if($isDuplicate)
-                                                    <div class="alert alert-danger alert-sm mt-2 mb-0 py-1 px-2">
-                                                        <i class="fa fa-exclamation-triangle"></i> 
-                                                        <strong>Conflict:</strong> Week {{ $currentTarget }} is already assigned to {{ $duplicateSource }}
-                                                    </div>
-                                                @endif
-                                            </div>
-                            
-                                            {{-- FULL DAY --}}
-                                            @elseif($mapping['type'] === 'fullDay')
-                                                <div class="card-header text-white py-2">
-                                                    <span class="font-weight-bold">
-                                                        Week {{ $mapping['sourceWeekNumber'] }} → Day {{ $mapping['sourceDayNumber'] }} (Full Day)
-                                                    </span>
-                                                    <div class="small">{{ $mapping['sourceDayTitle'] }}</div>
-                                                </div>
-                                                    @php
-                                                        $currentTargetWeek = $mapping['targetWeek'] ?? null;
-                                                        $currentTargetDay = $mapping['targetDay'] ?? null;
-                                                        $isDayDuplicate = false;
-                                                        $duplicateSource = null;
-                                                        $conflictWithFullWeek = false;
-                                                        
-                                                        // Check for full week conflict
-                                                        if($currentTargetWeek) {
-                                                            foreach($mappings as $otherKey => $otherMapping) {
-                                                                if($otherMapping['type'] === 'fullWeek' && 
-                                                                isset($otherMapping['targetWeek']) && 
-                                                                $otherMapping['targetWeek'] == $currentTargetWeek) {
-                                                                    $conflictWithFullWeek = true;
-                                                                    break;
-                                                                }
-                                                            }
-                                                        }
-                                                        
-                                                        // Check for day duplicate
-                                                        if($currentTargetWeek && $currentTargetDay) {
-                                                            foreach($mappings as $otherKey => $otherMapping) {
-                                                                if($otherKey !== $key && 
-                                                                $otherMapping['type'] === 'fullDay' && 
-                                                                isset($otherMapping['targetWeek']) && 
-                                                                isset($otherMapping['targetDay']) &&
-                                                                $otherMapping['targetWeek'] == $currentTargetWeek &&
-                                                                $otherMapping['targetDay'] == $currentTargetDay) {
-                                                                    $isDayDuplicate = true;
-                                                                    $duplicateSource = "Week {$otherMapping['sourceWeekNumber']}, Day {$otherMapping['sourceDayNumber']}";
-                                                                    break;
-                                                                }
-                                                            }
-                                                        }
-                                                    @endphp
-                                                   <div class="card-body p-2">
-                                                    <div class="row">
-                                                        <div class="col-md-6">
-                                                            <label class="small mb-1">Target Week:</label>
-                                                            <select class="form-control form-control-sm" 
-                                                                    wire:model.live="mappings.{{ $key }}.targetWeek">
-                                                                <option value="">Select Week</option>
-                                                                @for($w = 1; $w <= 12; $w++)
-                                                                    @php
-                                                                        $weekAvailable = true;
-                                                                        if($copyMode === 'existing' && $selectedExistingProgram && !empty($weekDayAvailability)) {
-                                                                            $weekAvailable = $weekDayAvailability[$w]['available'] ?? true;
+                                                            <option value="">Select</option>
+                                                            @for($w = 1; $w <= 12; $w++)
+                                                                @php
+                                                                    $weekAvailable = true;
+                                                                    $isUsedByOther = false;
+                                                                    $statusMessage = '';
+                                                                    
+                                                                    // Check if week is used by another full week mapping
+                                                                    foreach($mappings as $otherKey => $otherMapping) {
+                                                                        if($otherKey !== $key && 
+                                                                        $otherMapping['type'] === 'fullWeek' && 
+                                                                        isset($otherMapping['targetWeek']) && 
+                                                                        $otherMapping['targetWeek'] == $w) {
+                                                                            $isUsedByOther = true;
+                                                                            break;
                                                                         }
-                                                                    @endphp
-                                                                    <option value="{{ $w }}" {{ !$weekAvailable && $copyMode === 'existing' ? 'disabled' : '' }}>
-                                                                        Week {{ $w }} {{ (!$weekAvailable && $copyMode === 'existing') ? '(Full)' : '' }}
-                                                                    </option>
-                                                                @endfor
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <label class="small mb-1">Target Day:</label>
-                                                           <select class="form-control form-control-sm" 
+                                                                    }
+                                                                    
+                                                                    // For FULL WEEK: Check 'available' flag (requires ALL days empty)
+                                                                    if($copyMode === 'existing' && $selectedExistingProgram && !empty($weekDayAvailability)) {
+                                                                        $weekAvailable = $weekDayAvailability[$w]['available'] ?? false;
+                                                                        
+                                                                        // Provide detailed message
+                                                                        if(!$weekAvailable) {
+                                                                            $takenCount = $weekDayAvailability[$w]['takenDays'] ?? 0;
+                                                                            if($takenCount >= 7) {
+                                                                                $statusMessage = '(All Days Full)';
+                                                                            } else {
+                                                                                $statusMessage = "({$takenCount} Days Taken)";
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    
+                                                                    $isDisabled = !$weekAvailable || $isUsedByOther;
+                                                                @endphp
+                                                                <option value="{{ $w }}" 
+                                                                        {{ $isDisabled ? 'disabled' : '' }}
+                                                                        class="{{ $isUsedByOther ? 'taken-slot' : '' }}">
+                                                                    Week {{ $w }} 
+                                                                    @if($isUsedByOther)
+                                                                        (Already Selected)
+                                                                    @elseif($statusMessage)
+                                                                        {{ $statusMessage }}
+                                                                    @endif
+                                                                </option>
+                                                            @endfor
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                        {{-- FULL DAY MAPPING --}}
+                                        @if($mapping['type'] === 'fullDay')
+                                            <div class="card-header text-white py-2">
+                                                <span class="font-weight-bold">
+                                                    Week {{ $mapping['sourceWeekNumber'] }} → Day {{ $mapping['sourceDayNumber'] }} (Full Day)
+                                                </span>
+                                                <div class="small">{{ $mapping['sourceDayTitle'] }}</div>
+                                            </div>
+                                            
+                                            <div class="card-body p-2">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <label class="small mb-1">Target Week:</label>
+                                                        <select class="form-control form-control-sm" 
+                                                                wire:model.live="mappings.{{ $key }}.targetWeek">
+                                                            <option value="">Select Week</option>
+                                                            @for($w = 1; $w <= 12; $w++)
+                                                                @php
+                                                                    // For FULL DAY: Check if week has ANY available days
+                                                                    $hasAvailableDays = true;
+                                                                    if($copyMode === 'existing' && $selectedExistingProgram && !empty($weekDayAvailability)) {
+                                                                        $availableDayCount = 0;
+                                                                        if(isset($weekDayAvailability[$w]['days'])) {
+                                                                            foreach($weekDayAvailability[$w]['days'] as $dayAvailable) {
+                                                                                if($dayAvailable) $availableDayCount++;
+                                                                            }
+                                                                        }
+                                                                        $hasAvailableDays = $availableDayCount > 0;
+                                                                    }
+                                                                @endphp
+                                                                <option value="{{ $w }}" {{ (!$hasAvailableDays && $copyMode === 'existing') ? 'disabled' : '' }}>
+                                                                    Week {{ $w }} 
+                                                                    @if(!$hasAvailableDays && $copyMode === 'existing')
+                                                                        (No Available Days)
+                                                                    @endif
+                                                                </option>
+                                                            @endfor
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    <div class="col-md-6">
+                                                        <label class="small mb-1">Target Day:</label>
+                                                        <select class="form-control form-control-sm" 
                                                                 wire:model.live="mappings.{{ $key }}.targetDay"
-                                                                {{ !$currentTargetWeek ? 'disabled' : '' }}>
+                                                                {{ !($mapping['targetWeek'] ?? null) ? 'disabled' : '' }}>
                                                             <option value="">Select Day</option>
                                                             @for($d = 1; $d <= 7; $d++)
                                                                 @php
                                                                     $dayAvailable = true;
+                                                                    $currentTargetWeek = $mapping['targetWeek'] ?? null;
+                                                                    
                                                                     if($copyMode === 'existing' && $selectedExistingProgram && $currentTargetWeek && !empty($weekDayAvailability)) {
                                                                         $dayAvailable = $weekDayAvailability[$currentTargetWeek]['days'][$d] ?? true;
                                                                     }
                                                                 @endphp
-                                                                <option value="{{ $d }}" {{ !$dayAvailable && $copyMode === 'existing' ? 'disabled' : '' }}>
-                                                                    Day {{ $d }} {{ (!$dayAvailable && $copyMode === 'existing') ? '(Taken)' : '' }}
+                                                                <option value="{{ $d }}" {{ (!$dayAvailable && $copyMode === 'existing') ? 'disabled' : '' }}>
+                                                                    Day {{ $d }} 
+                                                                    @if(!$dayAvailable && $copyMode === 'existing')
+                                                                        (Taken)
+                                                                    @endif
                                                                 </option>
                                                             @endfor
                                                         </select>
-                                                        </div>
                                                     </div>
-                                                    <small class="text-muted d-block mt-2">All exercises from this day will be copied</small>
-                                                    
-                                                   @if($conflictWithFullWeek)
-                                                        <div class="duplicate-warning">
-                                                            <i class="fa fa-exclamation-triangle"></i> 
-                                                            <strong>Conflict:</strong> Week {{ $currentTargetWeek }} is being used for a full week copy
-                                                        </div>
-                                                    @elseif($isDayDuplicate)
-                                                        <div class="duplicate-warning">
-                                                            <i class="fa fa-exclamation-triangle"></i> 
-                                                            <strong>Conflict:</strong> This target is already assigned to {{ $duplicateSource }}
-                                                        </div>
-                                                    @endif
-                                                    </div>
+                                                </div>
+                                                <small class="text-muted d-block mt-2">All exercises from this day will be copied</small>
+                                            </div>
+                                        @endif
 
-                                        {{-- INDIVIDUAL EXERCISES --}}
-                                        @elseif($mapping['type'] === 'exercises')
+                                        {{-- INDIVIDUAL EXERCISES MAPPING --}}
+                                        @if($mapping['type'] === 'exercises')
                                             <div class="card-header text-white py-2">
                                                 <span class="font-weight-bold">
                                                     Week {{ $mapping['sourceWeekNumber'] }} → Day {{ $mapping['sourceDayNumber'] }}
                                                 </span>
                                                 <div class="small">{{ $mapping['sourceDayTitle'] }} ({{ count($mapping['exercises']) }} selected exercises)</div>
                                             </div>
+                                            
                                             <div class="card-body p-2">
                                                 @foreach($mapping['exercises'] as $exIndex => $exercise)
-                                                    @php
-                                                        $exTargetWeek = $exercise['targetWeek'] ?? null;
-                                                        $conflictWithFullWeek = false;
-                                                        
-                                                        if($exTargetWeek) {
-                                                            foreach($mappings as $otherKey => $otherMapping) {
-                                                                if($otherMapping['type'] === 'fullWeek' && 
-                                                                isset($otherMapping['targetWeek']) && 
-                                                                $otherMapping['targetWeek'] == $exTargetWeek) {
-                                                                    $conflictWithFullWeek = true;
-                                                                    break;
-                                                                }
-                                                            }
-                                                        }
-                                                    @endphp
                                                     <div class="d-flex justify-content-between align-items-center border-bottom py-2 {{ $loop->last ? '' : 'mb-2' }}">
                                                         <div class="flex-grow-1">
                                                             <i class="fa fa-dumbbell text-primary mr-2"></i>
@@ -617,43 +559,52 @@
                                                                 <option value="">--</option>
                                                                 @for($w = 1; $w <= 12; $w++)
                                                                     @php
-                                                                        $weekAvailable = true;
+                                                                        // For EXERCISES: Check if week has ANY available days
+                                                                        $hasAvailableDays = true;
                                                                         if($copyMode === 'existing' && $selectedExistingProgram && !empty($weekDayAvailability)) {
-                                                                            $weekAvailable = $weekDayAvailability[$w]['available'] ?? true;
+                                                                            $availableDayCount = 0;
+                                                                            if(isset($weekDayAvailability[$w]['days'])) {
+                                                                                foreach($weekDayAvailability[$w]['days'] as $dayAvailable) {
+                                                                                    if($dayAvailable) $availableDayCount++;
+                                                                                }
+                                                                            }
+                                                                            $hasAvailableDays = $availableDayCount > 0;
                                                                         }
                                                                     @endphp
-                                                                    <option value="{{ $w }}" {{ !$weekAvailable && $copyMode === 'existing' ? 'disabled' : '' }}>
-                                                                        {{ $w }}{{ (!$weekAvailable && $copyMode === 'existing') ? ' (Full)' : '' }}
+                                                                    <option value="{{ $w }}" {{ (!$hasAvailableDays && $copyMode === 'existing') ? 'disabled' : '' }}>
+                                                                        {{ $w }}
+                                                                        @if(!$hasAvailableDays && $copyMode === 'existing')
+                                                                            (Full)
+                                                                        @endif
                                                                     </option>
                                                                 @endfor
                                                             </select>
                                                             
                                                             <label class="mr-2 mb-0 small">Day:</label>
-                                                           <select class="form-control form-control-sm" 
-                                                                wire:model.live="mappings.{{ $key }}.exercises.{{ $exIndex }}.targetDay"
-                                                                style="width: 80px;"
-                                                                {{ !$exTargetWeek ? 'disabled' : '' }}>
-                                                            <option value="">--</option>
-                                                            @for($d = 1; $d <= 7; $d++)
-                                                                @php
-                                                                    $dayAvailable = true;
-                                                                    if($copyMode === 'existing' && $selectedExistingProgram && $exTargetWeek && !empty($weekDayAvailability)) {
-                                                                        $dayAvailable = $weekDayAvailability[$exTargetWeek]['days'][$d] ?? true;
-                                                                    }
-                                                                @endphp
-                                                                <option value="{{ $d }}" {{ !$dayAvailable && $copyMode === 'existing' ? 'disabled' : '' }}>
-                                                                    {{ $d }}{{ (!$dayAvailable && $copyMode === 'existing') ? ' (Taken)' : '' }}
-                                                                </option>
-                                                            @endfor
-                                                        </select>
+                                                            <select class="form-control form-control-sm" 
+                                                                    wire:model.live="mappings.{{ $key }}.exercises.{{ $exIndex }}.targetDay"
+                                                                    style="width: 80px;"
+                                                                    {{ !($exercise['targetWeek'] ?? null) ? 'disabled' : '' }}>
+                                                                <option value="">--</option>
+                                                                @for($d = 1; $d <= 7; $d++)
+                                                                    @php
+                                                                        // Exercises can be added to existing days (they fill empty slots)
+                                                                        // So we only disable if explicitly marked as not available
+                                                                        $dayAvailable = true;
+                                                                        $exTargetWeek = $exercise['targetWeek'] ?? null;
+                                                                        
+                                                                        if($copyMode === 'existing' && $selectedExistingProgram && $exTargetWeek && !empty($weekDayAvailability)) {
+                                                                            $dayAvailable = $weekDayAvailability[$exTargetWeek]['days'][$d] ?? true;
+                                                                        }
+                                                                    @endphp
+                                                                    <option value="{{ $d }}">
+                                                                        {{ $d }}
+                                                                        {{-- Exercises can fill empty slots, so we show all days as available --}}
+                                                                    </option>
+                                                                @endfor
+                                                            </select>
                                                         </div>
                                                     </div>
-                                                     @if($conflictWithFullWeek)
-                                                        <div class="duplicate-warning mt-2">
-                                                            <i class="fa fa-exclamation-triangle"></i> 
-                                                            <small>Week {{ $exTargetWeek }} is being used for a full week copy</small>
-                                                        </div>
-                                                    @endif
                                                 @endforeach
                                             </div>
                                         @endif
@@ -1265,7 +1216,7 @@ document.addEventListener('livewire:updated', debounce(function() {
                                                 <div class="col-md-3 mb-3">
                                                     <label class="form-label">Exercise List</label>
                                                     <select class="form-control form-control-sm" disabled>
-                                                        <option value="">--Select Exercise--</option>
+                                                        <option value="">-Select Exercise-</option>
                                                         @foreach($exerciseLists as $list)
                                                             
                                                             <option value="{{ $list->id }}" {{ $exercise['exercise_list_id'] == $list->id ? 'selected' : '' }}>
