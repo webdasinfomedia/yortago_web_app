@@ -398,7 +398,7 @@
                 height: 56px;
         }
          .heading-title{
-            color:#333333 !important;
+            color:#000000 !important;
             font-size: 18px !important;
         }
         .btn-rounded{

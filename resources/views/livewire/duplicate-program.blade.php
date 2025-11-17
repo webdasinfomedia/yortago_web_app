@@ -3,7 +3,7 @@
         <style>
                 .week-day-sidebar {
                     background: #ffffff;
-                    border-right: 1px solid #dee2e6;
+                    border: 1px solid #dee2e6;
                     min-height: 80vh;
                     padding: 15px;
                 }
@@ -58,6 +58,13 @@
                     justify-content: space-between;
                     align-items: center;
                 }
+                .main-div{
+                background-color: #FDF9F6 !important;
+                border: 1px solid #D2D2d2 !important;
+                border-radius: 10px !important;
+                padding: 15px 12px 15px 25px !important;
+                
+            }
 
                 .day-item:hover {
                     background: #f8f9fa;
@@ -239,7 +246,6 @@
             }
             .modal-title{
                 color: #7e7e7e !important;
-                font-size:18px;
             }
             .form-check-inline{
                 font-size:16px;
@@ -779,379 +785,265 @@
 
     <script>
         // Store accordion states
-        let accordionStates = new Map();
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize states
-            initAccordionStates();
-                
-            window.addEventListener('show-success', event => {
-                if (typeof toastr !== 'undefined') {
-                    toastr.success(event.detail.message);
-                } else {
-                    alert('Success: ' + event.detail.message);
-                }
-            });
-        
-            window.addEventListener('show-error', event => {
-                if (typeof toastr !== 'undefined') {
-                    toastr.error(event.detail.message);
-                } else {
-                    alert('Error: ' + event.detail.message);
-                }
-            });
-                
-            // 
-            const programCheckbox = document.getElementById('programCheckbox');
-            const copyExerciseBtn = document.querySelector('.copy-exercise-btn');
-            const copyProgramBtn = document.querySelector('.copy-program-btn');
+let accordionStates = new Map();
+let isInitialized = false;
 
-            if (programCheckbox) {
-                programCheckbox.addEventListener('change', function() {
-                    updateButtonVisibility();
-                });
-            }
+// Debounce helper
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 
-            
-            function updateButtonVisibility() {
-                const programCheckbox = document.getElementById('programCheckbox');
-                const copyExerciseBtn = document.querySelector('.copy-exercise-btn');
-                const copyProgramBtn = document.querySelector('.copy-program-btn');
-                const programText = document.querySelector('.program-selection-text');
-                const exerciseText = document.querySelector('.exercise-selection-text');
-                    
-                if (programCheckbox && programCheckbox.checked) {
-                    copyExerciseBtn?.classList.add('d-none');
-                    copyProgramBtn?.classList.remove('d-none');
-                    programText?.style.setProperty('display', 'block');
-                    exerciseText?.style.setProperty('display', 'none');
-                } else {
-                    copyExerciseBtn?.classList.remove('d-none');
-                    copyProgramBtn?.classList.add('d-none');
-                    programText?.style.setProperty('display', 'none');
-                    exerciseText?.style.setProperty('display', 'block');
-                }
-            }
+// Initialize only once
+function initializeApp() {
+    if (isInitialized) return;
+    isInitialized = true;
 
-            // ADD THIS NEW EVENT LISTENER
-            window.addEventListener('selection-changed', function() {
-                const programCheckbox = document.getElementById('programCheckbox');
-                if (programCheckbox && programCheckbox.checked) {
-                    programCheckbox.checked = false;
-                }
-                updateButtonVisibility();
-            });
-                
-            window.addEventListener('showCopyProgramModal', () => {
-                $('#copyProgramModal').modal('show');
-            });
-        
-            window.addEventListener('hideCopyModal', () => {
-                $('#copyProgramModal').modal('hide');
-            });
-        });
-        
-        function initAccordionStates() {
-            document.querySelectorAll('[id^="weekDays"]').forEach(accordion => {
-                const weekId = accordion.id.replace('weekDays', '');
-                const isOpen = accordion.style.display === 'block';
-                    
-                accordionStates.set(weekId, isOpen);
-            });
+    // Toast notifications
+    window.addEventListener('show-success', event => {
+        if (typeof toastr !== 'undefined') {
+            toastr.success(event.detail.message);
         }
-        
-        function toggleAccordion(weekId, event) {
-            // Prevent if clicking checkbox or button
-            if (event && (
-                event.target.type === 'checkbox' ||
-                event.target.closest('button')
-            )) {
-                return;
-            }
-        
+    });
+
+    window.addEventListener('show-error', event => {
+        if (typeof toastr !== 'undefined') {
+            toastr.error(event.detail.message);
+        }
+    });
+
+    // Button visibility
+    updateButtonVisibility();
+
+    // Modal events
+    window.addEventListener('showCopyProgramModal', () => {
+        $('#copyProgramModal').modal('show');
+    });
+
+    window.addEventListener('hideCopyModal', () => {
+        $('#copyProgramModal').modal('hide');
+    });
+
+    // Scroll modal event
+    window.addEventListener('scroll-modal-to-top', debounce(scrollModalToTop, 100));
+
+    // Week arrow rotation
+    window.addEventListener('rotate-week-arrow', function(event) {
+        setTimeout(() => {
+            const weekId = event.detail.weekId;
             const accordion = document.getElementById('weekDays' + weekId);
             const arrow = document.getElementById('arrow' + weekId);
-        
-            if (!accordion || !arrow) return;
-        
-            // Toggle display
-            const isCurrentlyOpen = accordion.style.display === 'block';
-                
-            if (isCurrentlyOpen) {
-                accordion.style.display = 'none';
-                arrow.classList.remove('rotated');
-                accordionStates.set(weekId.toString(), false);
-            } else {
+            
+            if (accordion && arrow) {
                 accordion.style.display = 'block';
                 arrow.classList.add('rotated');
                 accordionStates.set(weekId.toString(), true);
             }
+        }, 100);
+    });
+
+    // Selection changed event
+    window.addEventListener('selection-changed', debounce(function() {
+        const programCheckbox = document.getElementById('programCheckbox');
+        if (programCheckbox?.checked) {
+            programCheckbox.checked = false;
         }
-            
-        function toggleAccordionExercise(exerciseId, event) {
-            if (event && (event.target.closest('button') || event.target.tagName === 'BUTTON')) {
-                return;
-            }
+        updateButtonVisibility();
+    }, 150));
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeApp();
+    initAccordionStates();
+
+    // Program checkbox handler
+    const programCheckbox = document.getElementById('programCheckbox');
+    if (programCheckbox) {
+        programCheckbox.addEventListener('change', updateButtonVisibility);
+    }
+});
+
+function initAccordionStates() {
+    document.querySelectorAll('[id^="weekDays"]').forEach(accordion => {
+        const weekId = accordion.id.replace('weekDays', '');
+        const isOpen = accordion.style.display === 'block';
+        accordionStates.set(weekId, isOpen);
+    });
+}
+
+function toggleAccordion(weekId, event) {
+    if (event && (event.target.type === 'checkbox' || event.target.closest('button'))) {
+        return;
+    }
+
+    const accordion = document.getElementById('weekDays' + weekId);
+    const arrow = document.getElementById('arrow' + weekId);
+
+    if (!accordion || !arrow) return;
+
+    const isCurrentlyOpen = accordion.style.display === 'block';
+
+    // Close all other accordions
+    document.querySelectorAll('[id^="weekDays"]').forEach(acc => {
+        const accWeekId = acc.id.replace('weekDays', '');
+        const accArrow = document.getElementById('arrow' + accWeekId);
         
-            const body = document.getElementById('exerciseBody' + exerciseId);
-            const arrow = document.getElementById('exerciseArrow' + exerciseId);
+        if (accWeekId != weekId) {
+            acc.style.display = 'none';
+            if (accArrow) accArrow.classList.remove('rotated');
+            accordionStates.set(accWeekId.toString(), false);
+        }
+    });
+
+    // Toggle current accordion
+    if (isCurrentlyOpen) {
+        accordion.style.display = 'none';
+        arrow.classList.remove('rotated');
+        accordionStates.set(weekId.toString(), false);
+    } else {
+        accordion.style.display = 'block';
+        arrow.classList.add('rotated');
+        accordionStates.set(weekId.toString(), true);
+    }
+}
+
+function toggleAccordionExercise(exerciseId, event) {
+    if (event && (event.target.closest('button') || event.target.tagName === 'BUTTON')) {
+        return;
+    }
+
+    const body = document.getElementById('exerciseBody' + exerciseId);
+    const arrow = document.getElementById('exerciseArrow' + exerciseId);
+
+    if (!body) return;
+
+    if (body.style.display === 'none' || body.style.display === '') {
+        body.style.display = 'block';
+        if (arrow) arrow.classList.add('rotated');
+    } else {
+        body.style.display = 'none';
+        if (arrow) arrow.classList.remove('rotated');
+    }
+}
+
+function updateButtonVisibility() {
+    const programCheckbox = document.getElementById('programCheckbox');
+    const copyExerciseBtn = document.querySelector('.copy-exercise-btn');
+    const copyProgramBtn = document.querySelector('.copy-program-btn');
+    const programText = document.querySelector('.program-selection-text');
+    const exerciseText = document.querySelector('.exercise-selection-text');
+    
+    if (programCheckbox?.checked) {
+        copyExerciseBtn?.classList.add('d-none');
+        copyProgramBtn?.classList.remove('d-none');
+        if (programText) programText.style.display = 'block';
+        if (exerciseText) exerciseText.style.display = 'none';
+    } else {
+        copyExerciseBtn?.classList.remove('d-none');
+        copyProgramBtn?.classList.add('d-none');
+        if (programText) programText.style.display = 'none';
+        if (exerciseText) exerciseText.style.display = 'block';
+    }
+}
+
+function scrollModalToTop() {
+    const modalBody = document.querySelector('.modal-dialog-scrollable .modal-body');
+    if (!modalBody) return;
+
+    setTimeout(() => {
+        const titleInput = document.getElementById('programTitle');
+        const categoryInput = document.getElementById('programCategory');
         
-            if (!body) return;
+        const titleError = titleInput?.closest('.form-group')?.querySelector('.text-danger');
+        const categoryError = categoryInput?.closest('.form-group')?.querySelector('.text-danger');
         
-            if (body.style.display === 'none' || body.style.display === '') {
-                body.style.display = 'block';
-                if (arrow) arrow.classList.add('rotated');
+        const titleHasError = titleError?.textContent.trim() !== '';
+        const categoryHasError = categoryError?.textContent.trim() !== '';
+        
+        modalBody.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        if (titleHasError && titleInput && !titleInput.disabled) {
+            setTimeout(() => titleInput.focus(), 300);
+        } else if (categoryHasError && categoryInput && !categoryInput.disabled) {
+            setTimeout(() => categoryInput.focus(), 300);
+        }
+    }, 200);
+}
+
+function restoreAccordions() {
+    const activeWeekId = @this.get('activeWeekAccordion');
+    
+    if (activeWeekId) {
+        const activeAccordion = document.getElementById('weekDays' + activeWeekId);
+        const activeArrow = document.getElementById('arrow' + activeWeekId);
+        if (activeAccordion && activeArrow) {
+            activeAccordion.style.display = 'block';
+            activeArrow.classList.add('rotated');
+            accordionStates.set(activeWeekId.toString(), true);
+        }
+    }
+
+    accordionStates.forEach((isOpen, weekId) => {
+        const accordion = document.getElementById('weekDays' + weekId);
+        const arrow = document.getElementById('arrow' + weekId);
+        if (!accordion || !arrow) return;
+
+        if (isOpen) {
+            accordion.style.display = 'block';
+            arrow.classList.add('rotated');
+        } else {
+            accordion.style.display = 'none';
+            arrow.classList.remove('rotated');
+        }
+    });
+}
+
+// Livewire hooks - optimized
+document.addEventListener('livewire:load', function() {
+    initAccordionStates();
+});
+
+document.addEventListener('livewire:update', debounce(function() {
+    restoreAccordions();
+    
+    document.querySelectorAll('[id^="weekDays"]').forEach(accordion => {
+        const weekId = accordion.id.replace('weekDays', '');
+        const arrow = document.getElementById('arrow' + weekId);
+        
+        if (accordion && arrow) {
+            if (accordion.style.display === 'block') {
+                arrow.classList.add('rotated');
+                accordionStates.set(weekId, true);
             } else {
-                body.style.display = 'none';
-                if (arrow) arrow.classList.remove('rotated');
+                arrow.classList.remove('rotated');
+                accordionStates.set(weekId, false);
             }
         }
-        
-        function toggleExercise(exerciseId, dayId) {
-            @this.call('toggleExercise', exerciseId, dayId);
-        }
-        
-        function toggleWeekDays(weekId, checked) {
-            const dayCheckboxes = document.querySelectorAll(`input.day-checkbox[data-week-id="${weekId}"]`);
-            dayCheckboxes.forEach(checkbox => {
-                checkbox.checked = checked;
-                checkbox.dispatchEvent(new Event('input', { bubbles: true }));
-                checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-                    
-                const dayId = checkbox.value;
-                const exerciseCheckboxes = document.querySelectorAll(`input.exercise-checkbox[data-day-id="${dayId}"]`);
-                exerciseCheckboxes.forEach(exCheckbox => {
-                    exCheckbox.checked = checked;
-                    exCheckbox.dispatchEvent(new Event('input', { bubbles: true }));
-                });
-            });
-        }
-        
-        function updateDayExercises(dayId, checked) {
-            const exerciseCheckboxes = document.querySelectorAll(`input.exercise-checkbox[data-day-id="${dayId}"]`);
-            exerciseCheckboxes.forEach(checkbox => {
-                checkbox.checked = checked;
-                checkbox.dispatchEvent(new Event('input', { bubbles: true }));
-            });
-        }
-        
-        function updateWeekCheckbox(weekId) {
-            const weekCheckbox = document.getElementById(`week_${weekId}`);
-            const dayCheckboxes = document.querySelectorAll(`input.day-checkbox[data-week-id="${weekId}"]`);
-                
-            if (weekCheckbox && dayCheckboxes.length > 0) {
-                const checkedDays = document.querySelectorAll(`input.day-checkbox[data-week-id="${weekId}"]:checked`);
-                const allDaysSelected = checkedDays.length === dayCheckboxes.length;
-                weekCheckbox.checked = allDaysSelected;
-            }
-        }
-        
-        function updateParentDayCheckbox(dayId) {
-            const exerciseCheckboxes = document.querySelectorAll(`input.exercise-checkbox[data-day-id="${dayId}"]`);
-            const checkedExercises = document.querySelectorAll(`input.exercise-checkbox[data-day-id="${dayId}"]:checked`);
-            const dayCheckbox = document.getElementById(`day_${dayId}`);
-                
-            if (dayCheckbox && exerciseCheckboxes.length > 0) {
-                dayCheckbox.checked = checkedExercises.length === exerciseCheckboxes.length;
-                dayCheckbox.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        }
-        
-        // Restore accordion states after Livewire updates
-        function restoreAccordions() {
-            const activeWeekId = @this.get('activeWeekAccordion');
-            console.log('Active week ID:', activeWeekId);
-            // Always reopen the active week
-            if (activeWeekId) {
-                const activeAccordion = document.getElementById('weekDays' + activeWeekId);
-                const activeArrow = document.getElementById('arrow' + activeWeekId);
-                if (activeAccordion && activeArrow) {
-                    activeAccordion.style.display = 'block';
-                    activeArrow.classList.add('rotated');
-                    accordionStates.set(activeWeekId.toString(), true);
-                }
-            }
+    });
+}, 100));
 
-            // Restore saved accordion states
-            accordionStates.forEach((isOpen, weekId) => {
-                const accordion = document.getElementById('weekDays' + weekId);
-                const arrow = document.getElementById('arrow' + weekId);
-                if (!accordion || !arrow) return;
-
-                if (isOpen) {
-                    accordion.style.display = 'block';
-                    arrow.classList.add('rotated');
-                } else {
-                    accordion.style.display = 'none';
-                    arrow.classList.remove('rotated');
-                }
-            });
-        }
-
-        // Add this NEW function right after your existing restoreAccordions() function
-        document.addEventListener('livewire:updated', function() {
-            setTimeout(function() {
-                // Preserve arrow rotation for open accordions
-                document.querySelectorAll('[id^="weekDays"]').forEach(accordion => {
-                    const weekId = accordion.id.replace('weekDays', '');
-                    const arrow = document.getElementById('arrow' + weekId);
-                        
-                    if (accordion && arrow && accordion.style.display === 'block') {
-                        arrow.classList.add('rotated');
-                        accordionStates.set(weekId, true);
-                    }
-                });
-            }, 50);
+document.addEventListener('livewire:updated', debounce(function() {
+    setTimeout(() => {
+        document.querySelectorAll('[id^="weekDays"]').forEach(accordion => {
+            const weekId = accordion.id.replace('weekDays', '');
+            const arrow = document.getElementById('arrow' + weekId);
+            
+            if (accordion && arrow && accordion.style.display === 'block') {
+                arrow.classList.add('rotated');
+                accordionStates.set(weekId, true);
+            }
         });
-                    
-        // Livewire lifecycle hooks
-        document.addEventListener('livewire:load', function() {
-            initAccordionStates();       
-        });
-        
-        document.addEventListener('livewire:update', function() {
-            setTimeout(() => {
-                restoreAccordions(); // reapply open/close states
-
-                // Ensure arrow rotation for open accordions
-                document.querySelectorAll('[id^="weekDays"]').forEach(accordion => {
-                    const weekId = accordion.id.replace('weekDays', '');
-                    const arrow = document.getElementById('arrow' + weekId);
-                      
-                    if (accordion && arrow) {
-                        if (accordion.style.display === 'block') {
-                            arrow.classList.add('rotated');
-                            accordionStates.set(weekId, true);
-                        } else {
-                            arrow.classList.remove('rotated');
-                            accordionStates.set(weekId, false);
-                        }
-                    }
-                });
-            }, 50);
-        });
-
-        // Copy functionality
-        let selectedItems = [];
-        
-        function refreshSelections() {
-            selectedItems = [];
-                
-            document.querySelectorAll('input[wire\\:model="selectedWeeks"]:checked').forEach(c => {
-                selectedItems.push({
-                    type: 'week',
-                    id: c.value,
-                });
-            });
-                
-            document.querySelectorAll('input[wire\\:model="selectedDays"]:checked').forEach(c => {
-                selectedItems.push({
-                    type: 'day',
-                    id: c.value,
-                });
-            });
-        }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            const copyBtn = document.getElementById('copyExercisesBtn');
-            if (copyBtn) {
-                copyBtn.addEventListener('click', function() {
-                    refreshSelections();
-                    if (selectedItems.length === 0) {
-                        alert('Please select at least one week or day.');
-                        return;
-                    }
-                        
-                    @this.openCopyModal();
-                });
-            }
-        });  
+    }, 50);
+}, 100));
                 
     </script> 
-    <script>
-        window.addEventListener('scroll-modal-to-top', function() {
-            scrollModalToTop();
-        });
-
-        // Shared function
-        function scrollModalToTop() {
-            
-            const modalBody = document.querySelector('.modal-dialog-scrollable .modal-body');
-            if (modalBody) {
-                    
-                setTimeout(() => {
-                    // Only check for title and category errors specifically
-                    const titleInput = document.getElementById('programTitle');
-                    const categoryInput = document.getElementById('programCategory');
-                        
-                    // Find error for title
-                    const titleError = titleInput?.closest('.form-group')?.querySelector('.text-danger');
-                    const titleHasError = titleError && titleError.textContent.trim() !== '';
-                        
-                    // Find error for category
-                    const categoryError = categoryInput?.closest('.form-group')?.querySelector('.text-danger');
-                    const categoryHasError = categoryError && categoryError.textContent.trim() !== '';
-                        
-                    // Focus on first field with error (prioritize title, then category)
-                    if (titleHasError && titleInput && !titleInput.disabled) {
-                    
-                        modalBody.scrollTo({ 
-                            top: 0, 
-                            behavior: 'smooth' 
-                        });
-                        titleInput.focus();
-
-                    } else if (categoryHasError && categoryInput && !categoryInput.disabled) {
-                        modalBody.scrollTo({ 
-                            top: 0, 
-                            behavior: 'smooth' 
-                        });
-                        categoryInput.focus();
-                    } else {
-                        console.log('No title or category errors found');
-                    }
-                }, 1000);
-            } else {
-                console.error('Modal body not found!');
-            }
-        }
-
-        // Add this inside your DOMContentLoaded or at the end of your script section
-        window.addEventListener('rotate-week-arrow', function(event) {
-            const weekId = event.detail.weekId;
-
-            // Wait until Livewire DOM update completes
-            setTimeout(() => {
-                const accordion = document.getElementById('weekDays' + weekId);
-                const arrow = document.getElementById('arrow' + weekId);
-                   
-                if (accordion && arrow) {
-                    accordion.style.display = 'block';
-                    arrow.classList.add('rotated');
-                    accordionStates.set(weekId.toString(), true);
-                }
-            }, 100); // small delay ensures DOM exists
-        });
-        
-        // Replace the existing selection count update script with this:
-        document.addEventListener('DOMContentLoaded', function() {
-            const programCheckbox = document.getElementById('programCheckbox');
-            const programSelectionText = document.querySelector('.program-selection-text');
-            const exerciseSelectionText = document.querySelector('.exercise-selection-text');
-                
-            if (programCheckbox) {
-                programCheckbox.addEventListener('change', function() {
-                    updateButtonVisibility();
-                });
-            }
-        });
-
-        // Update counts after Livewire updates
-        document.addEventListener('livewire:updated', function() {
-            updateButtonVisibility();
-        });
-
-    </script>
 
     <!-- Success/Error Messages -->
     @if (session()->has('message'))
@@ -1162,280 +1054,282 @@
             </button>
         </div>
     @endif
-        
-    <div class="d-flex justify-content-between align-items-center  mb-2">
-        <div class="programname"><input type="checkbox" class="program-checkbox p-2" id="programCheckbox"> &nbsp;Program Title : {{ ucfirst($exercise['title']) }}</div>
-            <a href="{{ route('admin.new.exercise.manage') }}" class="btn btn-rounded btn-secondary btn-sm">
-                Back to Programs
-            </a>
-        </div>
-        
-        <div class="row">
-            <!-- Left Sidebar: Weeks & Days -->
-            <div class="col-md-4 week-day-sidebar">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="text-primary mb-0 left-sidebar-title">Weeks & Days</h6>
+     
+    <div class="main-div ">
+        <div class="d-flex justify-content-between align-items-center  mb-2">
+            <div class="programname"><input type="checkbox" class="program-checkbox p-2" id="programCheckbox"> &nbsp;Program Title : {{ ucfirst($exercise['title']) }}</div>
+                <a href="{{ route('admin.new.exercise.manage') }}" class="btn btn-rounded btn-secondary btn-sm">
+                    Back to Programs
+                </a>
+            </div>
+            
+            <div class="row">
+                <!-- Left Sidebar: Weeks & Days -->
+                <div class="col-md-4 week-day-sidebar">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-primary mb-0 left-sidebar-title">Weeks & Days</h6>
+                    </div>
+
+                    <!-- Weeks List -->
+                    <div class="weeks-container">
+                        @foreach($weeks as $week)
+                            <div class="week-card" wire:key="week-{{ $week['id'] }}">
+                                <!-- Week Header -->
+                                <div class="week-header {{ $selectedWeekId === $week['id'] ? 'active' : '' }}"
+                                    onclick="toggleAccordion({{ $week['id'] }}, event)">
+                                    
+                                    <div class="week-header-content">
+                                        <input type="checkbox" 
+                                            class="selection-checkbox week-checkbox " 
+                                            wire:click.stop="toggleWeek({{ $week['id'] }})"
+                                            @if(in_array($week['id'], $selectedWeeks ?? [])) checked @endif
+                                            onclick="event.stopPropagation()">
+
+                                        <i id="arrow{{ $week['id'] }}" 
+                                        class="fa fa-chevron-right accordion-arrow week-arrow {{ in_array($week['id'], $openAccordions) ? 'rotated' : '' }}"></i>
+                                        
+                                        <strong>Week {{ $week['number'] }}</strong>
+                                        <small class="text-muted ml-2">({{ count($week['days']) }} days)</small>
+                                    </div>
+                                    <div class="week-actions" onclick="event.stopPropagation();">
+                                        @if(count($weeks) > 1)
+                                        <button type="button"
+                                                    wire:click="deleteWeek({{ $week['id'] }})"
+                                                    wire:confirm="Are you sure you want to delete this week?"
+                                                    class="btn btn-danger-custom btn-action"
+                                                    title="Delete Week">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                <!-- Week Days - ADD wire:ignore HERE -->
+                                <div id="weekDays{{ $week['id'] }}" 
+                                    style="display: none;" 
+                                    wire:ignore.self>
+                                    @foreach($week['days'] as $day)
+                                        <div class="day-item {{ $selectedDayId === $day['id'] ? 'active' : '' }}"
+                                                wire:click="selectWeekAndDay({{ $week['id'] }}, {{ $day['id'] }})"
+                                                wire:key="day-{{ $day['id'] }}">
+                                            
+                                            <input type="checkbox" 
+                                                class="selection-checkbox day-checkbox"
+                                                wire:click.stop="toggleDay({{ $day['id'] }})"
+                                                @if(in_array($day['id'], $selectedDays ?? [])) checked @endif
+                                                onclick="event.stopPropagation()">
+
+                                            <div class="flex-grow-1" style="flex: 1;">
+                                                <strong>Day {{ $day['number'] }}</strong>
+                                                <div class="small text-muted mt-1">
+                                                    {{ $day['title'] }}
+                                                </div>
+                                                @if($day['duration'])
+                                                    <div class="small text-info">
+                                                        {{ $day['duration'] }} min
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <div class="day-actions" onclick="event.stopPropagation();">
+                            
+                                                @if(count($week['days']) > 1)
+                                                <button type="button"
+                                                            wire:click="deleteDay({{ $day['id'] }})"
+                                                            wire:confirm="Are you sure you want to delete this day?"
+                                                            class="btn btn-danger-custom btn-action"
+                                                            title="Delete Day">
+                                                        <i class="fa fa-trash"></i>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <!-- Copy Controls -->
+                    <div class="mt-3 text-center">
+                        <button type="button" wire:click="openCopyModal" class="btn btn-success-custom btn-sm copy-exercise-btn">
+                            <i class="fa fa-copy"></i> Copy Exercises
+                        </button>
+                        <button type="button" wire:click="openCopyProgramModal({{ $exercise['id'] }})"
+                                class="btn btn-success-custom btn-sm copy-program-btn d-none">
+                            <i class="fa fa-copy"></i> Copy Program
+                        </button>
+
+                        <small class="text-muted d-block mt-2" id="selectionCountText">
+                            @php
+                                $selectionCount = $this->getSelectionCount();
+                                $programCheckbox = false; // This will be controlled by JavaScript
+                            @endphp
+                            
+                            <span class="program-selection-text" style="display: none;">
+                                <strong>1 Program Selected (Full Program)</strong>
+                            </span>
+                            
+                            <span class="exercise-selection-text">
+                                Selected: 
+                                <span id="weekCount">{{ $selectionCount['selectedWeeksCount'] }}</span> weeks, 
+                                <span id="dayCount">{{ $selectionCount['selectedDaysCount'] }}</span> days, 
+                                <span id="exerciseCount">{{ $selectionCount['selectedExercisesCount'] }}</span> exercises
+                            </span>
+                        </small>
+                    </div>
                 </div>
 
-                <!-- Weeks List -->
-                <div class="weeks-container">
-                    @foreach($weeks as $week)
-                        <div class="week-card" wire:key="week-{{ $week['id'] }}">
-                            <!-- Week Header -->
-                            <div class="week-header {{ $selectedWeekId === $week['id'] ? 'active' : '' }}"
-                                onclick="toggleAccordion({{ $week['id'] }}, event)">
+                <!-- Right Side: Exercises -->
+                <div class="col-md-8">
+                    <div class="exercise-content" style="padding: 20px; border: 1px solid #dee2e6; background: #ffffff;">
+                        @if($selectedDayId)
+                            @php
+                                $selectedDay = null;
+                                $selectedWeek = null;
                                 
-                                <div class="week-header-content">
-                                    <input type="checkbox" 
-                                        class="selection-checkbox week-checkbox " 
-                                        wire:click.stop="toggleWeek({{ $week['id'] }})"
-                                        @if(in_array($week['id'], $selectedWeeks ?? [])) checked @endif
-                                        onclick="event.stopPropagation()">
+                                foreach($weeks as $week) {
+                                    foreach($week['days'] as $day) {
+                                        if($day['id'] == $selectedDayId) {
+                                            $selectedDay = $day;
+                                            $selectedWeek = $week;
+                                            break 2;
+                                        }
+                                    }
+                                }
+                            @endphp
 
-                                    <i id="arrow{{ $week['id'] }}" 
-                                    class="fa fa-chevron-right accordion-arrow week-arrow {{ in_array($week['id'], $openAccordions) ? 'rotated' : '' }}"></i>
-                                    
-                                    <strong>Week {{ $week['number'] }}</strong>
-                                    <small class="text-muted ml-2">({{ count($week['days']) }} days)</small>
-                                </div>
-                                <div class="week-actions" onclick="event.stopPropagation();">
-                                    @if(count($weeks) > 1)
-                                       <button type="button"
-                                                wire:click="deleteWeek({{ $week['id'] }})"
-                                                wire:confirm="Are you sure you want to delete this week?"
-                                                class="btn btn-danger-custom btn-action"
-                                                title="Delete Week">
-                                            <i class="fa fa-trash"></i>
-                                        </button>
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div>
+                                    <h5 class="text-primary mb-1">
+                                        Week {{ $selectedWeek['number'] }} - {{ $selectedDay['title'] }}
+                                    </h5>
+                                    @if($selectedDay['summary'])
+                                        <small class="text-muted">{{ $selectedDay['summary'] }}</small>
                                     @endif
                                 </div>
                             </div>
 
-                            <!-- Week Days - ADD wire:ignore HERE -->
-                            <div id="weekDays{{ $week['id'] }}" 
-                                style="display: none;" 
-                                wire:ignore.self>
-                                @foreach($week['days'] as $day)
-                                    <div class="day-item {{ $selectedDayId === $day['id'] ? 'active' : '' }}"
-                                            wire:click="selectWeekAndDay({{ $week['id'] }}, {{ $day['id'] }})"
-                                            wire:key="day-{{ $day['id'] }}">
-                                        
-                                        <input type="checkbox" 
-                                            class="selection-checkbox day-checkbox"
-                                            wire:click.stop="toggleDay({{ $day['id'] }})"
-                                            @if(in_array($day['id'], $selectedDays ?? [])) checked @endif
-                                            onclick="event.stopPropagation()">
-
-                                        <div class="flex-grow-1" style="flex: 1;">
-                                            <strong>Day {{ $day['number'] }}</strong>
-                                            <div class="small text-muted mt-1">
-                                                {{ $day['title'] }}
+                            <!-- Exercises -->
+                            @forelse($selectedDayExercises as $exerciseIndex => $exercise)
+                                @php
+                                    // Skip empty exercises in display
+                                    $hasData = !empty($exercise['exercise_list_id']) 
+                                        || (!empty($exercise['sets']) && $exercise['sets'] !== '') 
+                                        || (!empty($exercise['reps']) && $exercise['reps'] !== '')
+                                        || (!empty($exercise['rest']) && $exercise['rest'] !== '');
+                                @endphp
+                            
+                                @if($hasData)
+                                    <div class="exercise-card" wire:key="exercise-{{ $exercise['id'] }}">
+                                        <div class="exercise-header" 
+                                            onclick="toggleAccordionExercise({{ $exercise['id'] }}, event)">
+                                            <div class="d-flex align-items-center">
+                                                <input type="checkbox" 
+                                                    class="selection-checkbox exercise-checkbox"
+                                                    wire:click.stop="toggleExercise({{ $exercise['id'] }})"
+                                                    @if(in_array($exercise['id'], $selectedExercises ?? [])) checked @endif
+                                                    onclick="event.stopPropagation()">
+                                
+                                                <i id="exerciseArrow{{ $exercise['id'] }}" 
+                                                class="fa fa-chevron-right accordion-arrow rotated"></i>
+                                
+                                                <!-- <i class="fa fa-dumbbell mr-2 text-primary"></i> -->
+                                                <strong>Exercise {{ $exerciseIndex + 1 }}</strong>
+                                                @if($exercise['exercise_list_id'] && $exerciseLists->find($exercise['exercise_list_id']))
+                                                    <span class="ml-2 text-muted">- {{ $exerciseLists->find($exercise['exercise_list_id'])->name }}</span>
+                                                @endif
                                             </div>
-                                            @if($day['duration'])
-                                                <div class="small text-info">
-                                                    {{ $day['duration'] }} min
+                                            <button type="button"
+                                                    wire:click="deleteExercise({{ $exercise['id'] }})"
+                                                    wire:confirm="Are you sure you want to delete this exercise?"
+                                                    class="btn btn-danger-custom btn-action"
+                                                    title="Delete Exercise">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        </div>
+                                
+                                        <div id="exerciseBody{{ $exercise['id'] }}" class="card-body" style="display: block;">
+                                            <div class="row">
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label">Exercise List</label>
+                                                    <select class="form-control form-control-sm" disabled>
+                                                        <option value="">--Select Exercise--</option>
+                                                        @foreach($exerciseLists as $list)
+                                                            
+                                                            <option value="{{ $list->id }}" {{ $exercise['exercise_list_id'] == $list->id ? 'selected' : '' }}>
+                                                                {{ $list->name }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
                                                 </div>
-                                            @endif
-                                        </div>
-                                        <div class="day-actions" onclick="event.stopPropagation();">
-                        
-                                            @if(count($week['days']) > 1)
-                                                <button type="button"
-                                                        wire:click="deleteDay({{ $day['id'] }})"
-                                                        wire:confirm="Are you sure you want to delete this day?"
-                                                        class="btn btn-danger-custom btn-action"
-                                                        title="Delete Day">
-                                                    <i class="fa fa-trash"></i>
-                                                </button>
-                                            @endif
+                                
+                                                <div class="col-md-2 mb-3">
+                                                    <label class="form-label">Sets</label>
+                                                    <input type="text" class="form-control form-control-sm p-0 text-center"
+                                                        value="{{ $exercise['sets'] }}" readonly>
+                                                </div>
+                                
+                                                <div class="col-md-2 mb-3">
+                                                    <label class="form-label">Reps</label>
+                                                    <input type="text" class="form-control form-control-sm p-0 text-center"
+                                                        value="{{ $exercise['reps'] }}" readonly>
+                                                </div>
+                                
+                                                <div class="col-md-2 mb-3">
+                                                    <label class="form-label">Rest</label>
+                                                    <input type="text" class="form-control form-control-sm p-0 text-center"
+                                                        value="{{ $exercise['rest'] }}" readonly>
+                                                </div>
+                                
+                                                <div class="col-md-2 mb-3">
+                                                    <label class="form-label">Tempo</label>
+                                                    <input type="text" class="form-control form-control-sm"
+                                                        value="{{ $exercise['tempo'] }}" readonly>
+                                                </div>
+                                
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label">Intensity</label>
+                                                    <input type="text" class="form-control form-control-sm"
+                                                        value="{{ $exercise['intensity'] }}" readonly>
+                                                </div>
+                                
+                                                <div class="col-md-2 mb-3">
+                                                    <label class="form-label">Weight</label>
+                                                    <input type="text" class="form-control form-control-sm"
+                                                        value="{{ $exercise['weight'] }}" readonly>
+                                                </div>
+                                                <!-- Weight Value -->
+                                                <div class="col-md-2 mb-3" id="weightValueDiv{{ $exercise['id'] }}" style="display: {{ $exercise['weight'] === 'Yes' ? 'block' : 'none' }};">
+                                                    <label class="form-label">Weight(kg)</label>
+                                                    <input type="text" class="form-control form-control-sm"
+                                                        value="{{ $exercise['weight_value'] ?? '' }}" readonly>
+                                                </div>
+                                            </div>
+                                
+                                            <div class="row">
+                                                <div class="col-12 mb-3">
+                                                    <label class="form-label">Instructions/Notes</label>
+                                                    <textarea class="form-control" rows="2" readonly>{{ strip_tags(html_entity_decode($exercise['notes'] ?? '')) }}</textarea>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-
-                <!-- Copy Controls -->
-                <div class="mt-3 text-center">
-                    <button type="button" wire:click="openCopyModal" class="btn btn-success-custom btn-sm copy-exercise-btn">
-                        <i class="fa fa-copy"></i> Copy Exercises
-                    </button>
-                    <button type="button" wire:click="openCopyProgramModal({{ $exercise['id'] }})"
-                            class="btn btn-success-custom btn-sm copy-program-btn d-none">
-                        <i class="fa fa-copy"></i> Copy Program
-                    </button>
-
-                    <small class="text-muted d-block mt-2" id="selectionCountText">
-                        @php
-                            $selectionCount = $this->getSelectionCount();
-                            $programCheckbox = false; // This will be controlled by JavaScript
-                        @endphp
-                        
-                        <span class="program-selection-text" style="display: none;">
-                            <strong>1 Program Selected (Full Program)</strong>
-                        </span>
-                        
-                        <span class="exercise-selection-text">
-                            Selected: 
-                            <span id="weekCount">{{ $selectionCount['selectedWeeksCount'] }}</span> weeks, 
-                            <span id="dayCount">{{ $selectionCount['selectedDaysCount'] }}</span> days, 
-                            <span id="exerciseCount">{{ $selectionCount['selectedExercisesCount'] }}</span> exercises
-                        </span>
-                    </small>
-                </div>
-            </div>
-
-            <!-- Right Side: Exercises -->
-            <div class="col-md-8">
-                <div class="exercise-content" style="padding: 20px; border: 1px solid #dee2e6; background: #ffffff;">
-                    @if($selectedDayId)
-                        @php
-                            $selectedDay = null;
-                            $selectedWeek = null;
-                            
-                            foreach($weeks as $week) {
-                                foreach($week['days'] as $day) {
-                                    if($day['id'] == $selectedDayId) {
-                                        $selectedDay = $day;
-                                        $selectedWeek = $week;
-                                        break 2;
-                                    }
-                                }
-                            }
-                        @endphp
-
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div>
-                                <h5 class="text-primary mb-1">
-                                    Week {{ $selectedWeek['number'] }} - {{ $selectedDay['title'] }}
-                                </h5>
-                                @if($selectedDay['summary'])
-                                    <small class="text-muted">{{ $selectedDay['summary'] }}</small>
                                 @endif
-                            </div>
-                        </div>
-
-                        <!-- Exercises -->
-                        @forelse($selectedDayExercises as $exerciseIndex => $exercise)
-                            @php
-                                // Skip empty exercises in display
-                                $hasData = !empty($exercise['exercise_list_id']) 
-                                    || (!empty($exercise['sets']) && $exercise['sets'] !== '') 
-                                    || (!empty($exercise['reps']) && $exercise['reps'] !== '')
-                                    || (!empty($exercise['rest']) && $exercise['rest'] !== '');
-                            @endphp
-                        
-                            @if($hasData)
-                                <div class="exercise-card" wire:key="exercise-{{ $exercise['id'] }}">
-                                    <div class="exercise-header" 
-                                        onclick="toggleAccordionExercise({{ $exercise['id'] }}, event)">
-                                        <div class="d-flex align-items-center">
-                                            <input type="checkbox" 
-                                                class="selection-checkbox exercise-checkbox"
-                                                wire:click.stop="toggleExercise({{ $exercise['id'] }})"
-                                                @if(in_array($exercise['id'], $selectedExercises ?? [])) checked @endif
-                                                onclick="event.stopPropagation()">
-                            
-                                            <i id="exerciseArrow{{ $exercise['id'] }}" 
-                                            class="fa fa-chevron-right accordion-arrow rotated"></i>
-                            
-                                            <!-- <i class="fa fa-dumbbell mr-2 text-primary"></i> -->
-                                            <strong>Exercise {{ $exerciseIndex + 1 }}</strong>
-                                            @if($exercise['exercise_list_id'] && $exerciseLists->find($exercise['exercise_list_id']))
-                                                <span class="ml-2 text-muted">- {{ $exerciseLists->find($exercise['exercise_list_id'])->name }}</span>
-                                            @endif
-                                        </div>
-                                        <button type="button"
-                                                wire:click="deleteExercise({{ $exercise['id'] }})"
-                                                wire:confirm="Are you sure you want to delete this exercise?"
-                                                class="btn btn-danger-custom btn-action"
-                                                title="Delete Exercise">
-                                            <i class="fa fa-trash"></i>
-                                        </button>
-                                    </div>
-                            
-                                    <div id="exerciseBody{{ $exercise['id'] }}" class="card-body" style="display: block;">
-                                        <div class="row">
-                                            <div class="col-md-3 mb-3">
-                                                <label class="form-label">Exercise List</label>
-                                                <select class="form-control form-control-sm" disabled>
-                                                    <option value="">--Select Exercise--</option>
-                                                    @foreach($exerciseLists as $list)
-                                                        
-                                                        <option value="{{ $list->id }}" {{ $exercise['exercise_list_id'] == $list->id ? 'selected' : '' }}>
-                                                            {{ $list->name }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                            
-                                            <div class="col-md-2 mb-3">
-                                                <label class="form-label">Sets</label>
-                                                <input type="text" class="form-control form-control-sm p-0 text-center"
-                                                    value="{{ $exercise['sets'] }}" readonly>
-                                            </div>
-                            
-                                            <div class="col-md-2 mb-3">
-                                                <label class="form-label">Reps</label>
-                                                <input type="text" class="form-control form-control-sm p-0 text-center"
-                                                    value="{{ $exercise['reps'] }}" readonly>
-                                            </div>
-                            
-                                            <div class="col-md-2 mb-3">
-                                                <label class="form-label">Rest</label>
-                                                <input type="text" class="form-control form-control-sm p-0 text-center"
-                                                    value="{{ $exercise['rest'] }}" readonly>
-                                            </div>
-                            
-                                            <div class="col-md-2 mb-3">
-                                                <label class="form-label">Tempo</label>
-                                                <input type="text" class="form-control form-control-sm"
-                                                    value="{{ $exercise['tempo'] }}" readonly>
-                                            </div>
-                            
-                                            <div class="col-md-3 mb-3">
-                                                <label class="form-label">Intensity</label>
-                                                <input type="text" class="form-control form-control-sm"
-                                                    value="{{ $exercise['intensity'] }}" readonly>
-                                            </div>
-                            
-                                            <div class="col-md-2 mb-3">
-                                                <label class="form-label">Weight</label>
-                                                <input type="text" class="form-control form-control-sm"
-                                                    value="{{ $exercise['weight'] }}" readonly>
-                                            </div>
-                                            <!-- Weight Value -->
-                                            <div class="col-md-2 mb-3" id="weightValueDiv{{ $exercise['id'] }}" style="display: {{ $exercise['weight'] === 'Yes' ? 'block' : 'none' }};">
-                                                <label class="form-label">Weight(kg)</label>
-                                                <input type="text" class="form-control form-control-sm"
-                                                    value="{{ $exercise['weight_value'] ?? '' }}" readonly>
-                                            </div>
-                                        </div>
-                            
-                                        <div class="row">
-                                            <div class="col-12 mb-3">
-                                                <label class="form-label">Instructions/Notes</label>
-                                                <textarea class="form-control" rows="2" readonly>{{ strip_tags(html_entity_decode($exercise['notes'] ?? '')) }}</textarea>
-                                            </div>
-                                        </div>
-                                    </div>
+                            @empty
+                                <div class="text-center py-5">
+                                    <i class="fa fa-dumbbell fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No exercises found</h5>
+                                    <p class="text-muted">This day has no exercises</p>
                                 </div>
-                            @endif
-                        @empty
+                            @endforelse
+                        @else
                             <div class="text-center py-5">
-                                <i class="fa fa-dumbbell fa-3x text-muted mb-3"></i>
-                                <h5 class="text-muted">No exercises found</h5>
-                                <p class="text-muted">This day has no exercises</p>
+                                <i class="fa fa-calendar fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Select a day to view exercises</h5>
+                                <p class="text-muted">Choose a week and day from the sidebar</p>
                             </div>
-                        @endforelse
-                    @else
-                        <div class="text-center py-5">
-                            <i class="fa fa-calendar fa-3x text-muted mb-3"></i>
-                            <h5 class="text-muted">Select a day to view exercises</h5>
-                            <p class="text-muted">Choose a week and day from the sidebar</p>
-                        </div>
-                    @endif
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>

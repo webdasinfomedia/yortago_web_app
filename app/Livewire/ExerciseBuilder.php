@@ -20,6 +20,7 @@ class ExerciseBuilder extends Component
     public $selectedDayId = null;
     public $activeWeekAccordion = null;
     public $alternates = [];
+    public $alternatePivotIds = [];
 
     // Day title modal properties
     public $showTitleModal = false;
@@ -37,8 +38,10 @@ class ExerciseBuilder extends Component
         
         $this->initializeExerciseStructure();
         $this->loadWeeks();
+        $this->populateAlternates();
+        $this->populateAlternatePivotIds();
         $this->autoSelectFirstWeekAndDay();
-        $this->initializeAlternates();
+       
     }
     private function initializeExerciseStructure()
     {
@@ -54,27 +57,68 @@ class ExerciseBuilder extends Component
             $this->ensureWeeksHaveProperDayStructure();
         }
     }
-    private function initializeAlternates()
-    {
-        // Get all linked alternates and initialize them in the alternates array
-        $linkedAlternates = AlternateExerciseList::whereNotNull('new_exercise_week_day_item_id')->get();
-        $this->alternates = [];
-        foreach ($linkedAlternates as $alternate) {
-            $this->alternates[$alternate->id] = [
-                'id' => $alternate->id,
-                'name' => $alternate->name,
-                'exercise_list_id' => $alternate->exercise_list_id,
-                'sets' => $alternate->sets,
-                'reps' => $alternate->reps,
-                'rest' => $alternate->rest,
-                'tempo' => $alternate->tempo,
-                'intensity' => $alternate->intensity,
-                'weight' => $alternate->weight,
-                'weight_value' => $alternate->weight_value,
-                'notes' => $alternate->notes,
-            ];
+    private function populateAlternatePivotIds()
+{
+    foreach ($this->weeks as $week) {
+        foreach ($week['days'] as $day) {
+            foreach ($day['exercises'] as $exercise) {
+                foreach ($exercise['alternates'] as $alt) {
+                    $this->alternatePivotIds[$alt['id']] = $alt['pivot_id'];
+                }
+            }
         }
     }
+}
+    
+private function populateAlternates()
+{
+    $this->alternates = [];
+
+    foreach ($this->weeks as $week) {
+        foreach ($week['days'] as $day) {
+            foreach ($day['exercises'] as $exercise) {
+                foreach ($exercise['alternates'] as $alt) {
+                    // Populate with pivot data, not the alternate's base data
+                    $this->alternates[$alt['id']] = [
+                        'id' => $alt['id'],
+                        'pivot_id' => $alt['pivot_id'],
+                        'name' => $alt['name'],
+                        'exercise_list_id' => $alt['exercise_list_id'],
+                        'sets' => $alt['sets'] ?? null, // From pivot
+                        'reps' => $alt['reps'] ?? null, // From pivot
+                        'rest' => $alt['rest'] ?? null, // From pivot
+                        'tempo' => $alt['tempo'] ?? null, // From pivot
+                        'intensity' => $alt['intensity'] ?? null, // From pivot
+                        'weight' => $alt['weight'] ?? 'No', // From pivot
+                        'weight_value' => $alt['weight_value'] ?? null, // From pivot
+                        'notes' => $alt['notes'] ?? null, // From pivot
+                    ];
+                }
+            }
+        }
+    }
+}
+    // private function initializeAlternates()
+    // {
+    //     // Get all linked alternates and initialize them in the alternates array
+    //     $linkedAlternates = AlternateExerciseList::whereNotNull('new_exercise_week_day_item_id')->get();
+    //     $this->alternates = [];
+    //     foreach ($linkedAlternates as $alternate) {
+    //         $this->alternates[$alternate->id] = [
+    //             'id' => $alternate->id,
+    //             'name' => $alternate->name,
+    //             'exercise_list_id' => $alternate->exercise_list_id,
+    //             'sets' => $alternate->sets,
+    //             'reps' => $alternate->reps,
+    //             'rest' => $alternate->rest,
+    //             'tempo' => $alternate->tempo,
+    //             'intensity' => $alternate->intensity,
+    //             'weight' => $alternate->weight,
+    //             'weight_value' => $alternate->weight_value,
+    //             'notes' => $alternate->notes,
+    //         ];
+    //     }
+    // }
 
     private function ensureWeeksHaveProperDayStructure()
     {
@@ -158,76 +202,58 @@ private function loadWeeks()
                         'title' => $day->title ?: "Day {$dayNumber}",
                         'summary' => $day->summary ?: '',
                         'duration' => $day->duration ?: '',
-                        'exercises' => $day->exerciseItems->map(function ($ex, $exIndex) {
-                            $itemId = $ex->item_id > 0 ? $ex->item_id : ($exIndex + 1);
+                       'exercises' => $day->exerciseItems->map(function ($ex, $exIndex) {
+                        $itemId = $ex->item_id > 0 ? $ex->item_id : ($exIndex + 1);
+                        
+                        // Get linked alternates with their pivot data
+                        $linkedAlternates = $ex->alternateExercises()
+                            ->get()
+                            ->map(function($alt) {
+                                return [
+                                    'id' => $alt->id,
+                                    'pivot_id' => $alt->pivot->id,
+                                    'name' => $alt->name,
+                                    'exercise_list_id' => $alt->exercise_list_id,
+                                    'sets' => $alt->pivot->sets,
+                                    'reps' => $alt->pivot->reps,
+                                    'rest' => $alt->pivot->rest,
+                                    'tempo' => $alt->pivot->tempo,
+                                    'intensity' => $alt->pivot->intensity,
+                                    'weight' => $alt->pivot->weight ?? $alt->weight ?? 'No',
+                                    'weight_value' => $alt->pivot->weight_value ?? $alt->weight_value,
+                                    'notes' => $alt->pivot->notes ?? $alt->notes,
+                                    'image' => $alt->image,
+                                ];
+                            })
+                            ->toArray();
+                        
+                        // Check if there are alternates NOT yet linked to this item
+                        $hasAvailableAlternates = false;
+                        if ($ex->exercise_list_id) {
+                            $linkedAlternateIds = $ex->alternateExercises()->pluck('alternate_exercise_lists.id')->toArray();
                             
-                            // Get linked alternate exercises for THIS specific item
-                            $alternates = AlternateExerciseList::where('exercise_list_id', $ex->exercise_list_id)
-                                ->get()
-                                ->map(function($alt) {
-                                    return [
-                                        'id' => $alt->id,
-                                        'name' => $alt->name,
-                                        'exercise_list_id' => $alt->exercise_list_id,
-                                        'sets' => $alt->sets,
-                                        'reps' => $alt->reps,
-                                        'rest' => $alt->rest,
-                                        'tempo' => $alt->tempo,
-                                        'intensity' => $alt->intensity,
-                                        'weight' => $alt->weight,
-                                        'weight_value' => $alt->weight_value,
-                                        'notes' => $alt->notes,
-                                        'image' => $alt->image,
-                                    ];
-                                })
-                                ->toArray();
-                            
-                            // Check if there are available alternates for this exercise
-                            $hasAvailableAlternates = false;
-                            if ($ex->exercise_list_id) {
-                                // First, check if there are unlinked alternates OR alternates linked to other exercises
-                                $availableAlternatesExist = AlternateExerciseList::where('exercise_list_id', $ex->exercise_list_id)
-                                    ->where(function($query) use ($ex) {
-                                        $query->whereNull('new_exercise_week_day_item_id')
-                                            ->orWhere('new_exercise_week_day_item_id', '!=', $ex->id);
-                                    })
-                                    ->exists();
-                                
-                                if ($availableAlternatesExist) {
-                                    // Now check if ANY alternate for this exercise_list_id has data filled
-                                    // Check across ALL alternates with this exercise_list_id, not just this item
-                                    $hasFilledAlternate = AlternateExerciseList::where('exercise_list_id', $ex->exercise_list_id)
-                                        ->where(function($query) {
-                                            $query->whereNotNull('sets')
-                                                ->orWhereNotNull('reps')
-                                                ->orWhereNotNull('rest')
-                                                ->orWhereNotNull('tempo')
-                                                ->orWhereNotNull('intensity');
-                                        })
-                                        ->exists();
-                                    
-                                    // Only show "Add Alternate" button if no alternate has data
-                                    $hasAvailableAlternates = !$hasFilledAlternate;
-                                }
-                            }
-                            
-                            return [
-                                'id' => $ex->id,
-                                'item_id' => $itemId,
-                                'exercise_list_id' => $ex->exercise_list_id,
-                                'name' => $ex->name,
-                                'sets' => $ex->sets,
-                                'reps' => $ex->reps,
-                                'rest' => $ex->rest,
-                                'tempo' => $ex->tempo,
-                                'intensity' => $ex->intensity,
-                                'weight' => $ex->weight,
-                                'weight_value' => $ex->weight_value,
-                                'notes' => $ex->notes,
-                                'alternates' => $alternates,
-                                'has_available_alternates' => $hasAvailableAlternates,
-                            ];
-                        })->toArray()
+                            $hasAvailableAlternates = AlternateExerciseList::where('exercise_list_id', $ex->exercise_list_id)
+                                ->whereNotIn('id', $linkedAlternateIds)
+                                ->exists();
+                        }
+                        
+                        return [
+                            'id' => $ex->id,
+                            'item_id' => $itemId,
+                            'exercise_list_id' => $ex->exercise_list_id,
+                            'name' => $ex->name,
+                            'sets' => $ex->sets,
+                            'reps' => $ex->reps,
+                            'rest' => $ex->rest,
+                            'tempo' => $ex->tempo,
+                            'intensity' => $ex->intensity,
+                            'weight' => $ex->weight ?? 'No',
+                            'weight_value' => $ex->weight_value,
+                            'notes' => $ex->notes,
+                            'alternates' => $linkedAlternates,
+                            'has_available_alternates' => $hasAvailableAlternates,
+                        ];
+                    })->toArray()
                     ];
                 })->values()->toArray()
             ];
@@ -520,36 +546,30 @@ private function loadWeeks()
     public function updateExercise($exerciseId, $field, $value)
     {
         $exercise = NewExerciseWeekDayItem::findOrFail($exerciseId);
-
+    
         // If updating exercise_list_id, preload weight and notes from ExerciseList
         if ($field === 'exercise_list_id' && !empty($value)) {
-            // First, unlink any existing alternate exercises from this item
-            AlternateExerciseList::where('new_exercise_week_day_item_id', $exerciseId)
-                ->update(['new_exercise_week_day_item_id' => null]);
-            
             $exerciseList = ExerciseList::find($value);
             
             if ($exerciseList) {
                 $exercise->update([
                     'exercise_list_id' => $value,
                     'name' => $exerciseList->name,
-                    'weight' => $exerciseList->weight ?? $exercise->weight,
-                    'weight_value'=> $exerciseList->weight_value ?? $exercise->weight_value,
-                    'notes' => $exerciseList->notes ?? $exercise->notes,
+                    'weight' => $exerciseList->weight ?? 'No',
+                    'weight_value' => $exerciseList->weight_value ?? '',
+                    'notes' => $exerciseList->notes ?? '',
                 ]);
             } else {
                 $exercise->update(['exercise_list_id' => $value]);
             }
-            
-            // Force a complete reload to update the view
-            $this->loadWeeks();
-            
-            // Force Livewire to re-render this specific exercise card
-            $this->dispatch('$refresh');
-            
         } else {
             $exercise->update([$field => $value]);
         }
+        
+        // Always reload after update to recalculate has_available_alternates
+        $this->loadWeeks();
+        $this->populateAlternates();
+        $this->populateAlternatePivotIds();
     }
 
     public function saveAllExercises()
@@ -616,7 +636,44 @@ private function loadWeeks()
         return [];
     }
 
-   public function addAlternateExercise($mainExerciseId)
+//  public function addAlternateExercise($mainExerciseId)
+// {
+//     $mainExercise = NewExerciseWeekDayItem::findOrFail($mainExerciseId);
+    
+//     if (!$mainExercise->exercise_list_id) {
+//         $this->dispatch('show-error', message: 'Please select a main exercise first!');
+//         return;
+//     }
+    
+//     // Get already linked alternate IDs for this item
+//     $linkedAlternateIds = $mainExercise->alternateExercises()->pluck('alternate_exercise_lists.id')->toArray();
+    
+//     // Find an alternate NOT yet linked to this item
+//     $availableAlternate = AlternateExerciseList::where('exercise_list_id', $mainExercise->exercise_list_id)
+//         ->whereNotIn('id', $linkedAlternateIds)
+//         ->first();
+    
+//     if (!$availableAlternate) {
+//         $this->dispatch('show-error', message: 'No available alternate exercises for this exercise!');
+//         return;
+//     }
+    
+//     // Create the pivot relationship with default values from alternate
+//     $mainExercise->alternateExercises()->attach($availableAlternate->id, [
+//         'sets' => null,
+//         'reps' => null,
+//         'rest' => null,
+//         'tempo' => null,
+//         'intensity' => null,
+//         'weight' => $availableAlternate->weight ?? 'No',
+//         'weight_value' => $availableAlternate->weight_value,
+//         'notes' => $availableAlternate->notes,
+//     ]);
+    
+//     $this->loadWeeks();
+//     $this->dispatch('show-success', message: 'Alternate exercise added successfully!');
+// }
+public function addAlternateExercise($mainExerciseId)
 {
     $mainExercise = NewExerciseWeekDayItem::findOrFail($mainExerciseId);
     
@@ -625,51 +682,35 @@ private function loadWeeks()
         return;
     }
     
-    // Get available alternate exercises - only check exercise_list_id
-    $availableAlternates = AlternateExerciseList::where('exercise_list_id', $mainExercise->exercise_list_id)
-        ->get();
+    // Get already linked alternate IDs for this item
+    $linkedAlternateIds = $mainExercise->alternateExercises()->pluck('alternate_exercise_lists.id')->toArray();
     
-    if ($availableAlternates->isEmpty()) {
-        $this->dispatch('show-error', message: 'No alternate exercises available for this exercise!');
+    // Find an alternate NOT yet linked to this item
+    $availableAlternate = AlternateExerciseList::where('exercise_list_id', $mainExercise->exercise_list_id)
+        ->whereNotIn('id', $linkedAlternateIds)
+        ->first();
+    
+    if (!$availableAlternate) {
+        $this->dispatch('show-error', message: 'No available alternate exercises for this exercise!');
         return;
     }
     
-    // Get the first available alternate
-    $alternate = $availableAlternates->first();
-    
-    // Get the exercise list data to pre-fill notes, weight, and weight_value
-    $exerciseList = ExerciseList::find($alternate->exercise_list_id);
-    
-    // Link it to the main exercise and pre-fill data from exercise list
-    $alternate->update([
-        'new_exercise_week_day_item_id' => $mainExercise->id,
-        'sets' => null,
-        'reps' => null,
-        'rest' => null,
-        'tempo' => null,
-        'intensity' => null,
-        'weight' => $exerciseList->weight ?? 'Yes',
-        'weight_value' => $exerciseList->weight_value ?? null,
-        'notes' => $exerciseList->notes ?? null,
+    // Create the pivot relationship with default values from alternate
+    $mainExercise->alternateExercises()->attach($availableAlternate->id, [
+        'sets' => $availableAlternate->sets ?? null,
+        'reps' => $availableAlternate->reps ?? null,
+        'rest' => $availableAlternate->rest ?? null,
+        'tempo' => $availableAlternate->tempo ?? null,
+        'intensity' => $availableAlternate->intensity ?? null,
+        'weight' => $availableAlternate->weight ?? 'No',
+        'weight_value' => $availableAlternate->weight_value ?? null,
+        'notes' => $availableAlternate->notes ?? null,
     ]);
     
-    // Initialize this alternate in the alternates array with pre-filled data
-    $this->alternates[$alternate->id] = [
-        'id' => $alternate->id,
-        'name' => $alternate->name,
-        'exercise_list_id' => $alternate->exercise_list_id,
-        'sets' => null,
-        'reps' => null,
-        'rest' => null,
-        'tempo' => null,
-        'intensity' => null,
-        'weight' => $exerciseList->weight ?? 'Yes',
-        'weight_value' => $exerciseList->weight_value ?? null,
-        'notes' => $exerciseList->notes ?? null,
-    ];
-    
     $this->loadWeeks();
-    $this->dispatch('show-success', message: 'Alternate exercise added with pre-filled data! Please complete the remaining fields and click Save Alternate.');
+    $this->populateAlternates();
+    $this->populateAlternatePivotIds();
+    $this->dispatch('show-success', message: 'Alternate exercise added successfully!');
 }
 
     // public function updateAlternateExercise($alternateId, $field, $value)
@@ -680,22 +721,24 @@ private function loadWeeks()
     //     $this->loadWeeks();
     // }
 
-    public function saveAlternate($alternateId)
-    {
-        if (!isset($this->alternates[$alternateId])) {
-            $this->dispatch('show-error', message: 'Alternate exercise not found!');
-            return;
-        }
+ public function saveAlternate($alternateId)
+{
+    if (!isset($this->alternates[$alternateId])) {
+        $this->dispatch('show-error', message: 'Alternate exercise not found!');
+        return;
+    }
 
-        $data = $this->alternates[$alternateId];
+    if (!isset($this->alternatePivotIds[$alternateId])) {
+        $this->dispatch('show-error', message: 'Pivot ID not found!');
+        return;
+    }
 
-        $alternate = AlternateExerciseList::find($alternateId);
-        if (!$alternate) {
-            $this->dispatch('show-error', message: 'Alternate exercise missing in database!');
-            return;
-        }
-
-        $alternate->update([
+    $data = $this->alternates[$alternateId];
+    $pivotId = $this->alternatePivotIds[$alternateId];
+    
+    \DB::table('alternate_exercise_item_pivot')
+        ->where('id', $pivotId)
+        ->update([
             'sets' => $data['sets'] ?? null,
             'reps' => $data['reps'] ?? null,
             'rest' => $data['rest'] ?? null,
@@ -704,20 +747,58 @@ private function loadWeeks()
             'weight' => $data['weight'] ?? null,
             'weight_value' => $data['weight_value'] ?? null,
             'notes' => $data['notes'] ?? null,
+            'updated_at' => now(),
         ]);
 
-        $this->dispatch('show-success', message: 'Alternate exercise saved successfully!');
-        $this->loadWeeks();
+    $this->dispatch('show-success', message: 'Alternate exercise saved successfully!');
+    $this->loadWeeks();
+    $this->populateAlternatePivotIds();
+}
+    
+ public function deleteAlternateExercise($alternateId, $exerciseItemId = null)
+{
+    // If exerciseItemId is provided, find it from the current selection
+    if (!$exerciseItemId) {
+        // Find from alternates array or selected day
+        foreach ($this->getSelectedDayExercises() as $ex) {
+            foreach ($ex['alternates'] ?? [] as $alt) {
+                if ($alt['id'] == $alternateId) {
+                    $exerciseItemId = $ex['id'];
+                    break 2;
+                }
+            }
+        }
     }
-
-    public function deleteAlternateExercise($alternateId)
-    {
-        $alternate = AlternateExerciseList::findOrFail($alternateId);
-        $alternate->update(['new_exercise_week_day_item_id' => null]);
-        
-        $this->loadWeeks();
-        $this->dispatch('show-success', message: 'Alternate exercise removed successfully!');
+    
+    if (!$exerciseItemId) {
+        $this->dispatch('show-error', message: 'Cannot determine exercise item!');
+        return;
     }
+    
+    $mainExercise = NewExerciseWeekDayItem::findOrFail($exerciseItemId);
+    
+    // Detach (remove the pivot relationship)
+    $mainExercise->alternateExercises()->detach($alternateId);
+    
+    $this->loadWeeks();
+    $this->dispatch('show-success', message: 'Alternate exercise removed from this exercise!');
+}
+/**
+ * Check if there are available unlinked alternates for a specific exercise list
+ */
+public function checkAvailableAlternates($exerciseItemId, $exerciseListId)
+{
+    if (empty($exerciseListId)) {
+        return false;
+    }
+    
+    // Check if there are UNLINKED alternates for this exercise_list_id
+    $hasAvailable = AlternateExerciseList::where('exercise_list_id', $exerciseListId)
+        ->whereNull('new_exercise_week_day_item_id')
+        ->exists();
+    
+    return $hasAvailable;
+}
 
     public function render()
     {

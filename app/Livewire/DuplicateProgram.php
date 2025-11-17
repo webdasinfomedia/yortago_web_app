@@ -34,6 +34,7 @@ class DuplicateProgram extends Component
     public $program_id;
     public $program_type = 'generic'; // Add default value
     public $openAccordions = [];
+    public $isProcessing = false;
 
     // Selection tracking
     public $selectedWeeks = [];
@@ -85,18 +86,18 @@ class DuplicateProgram extends Component
     private function loadWeeks()
     {
         $this->weeks = $this->exercise->weeks()
-            ->with(['days.exerciseItems'])
+            ->with(['days.exerciseItems.alternateExercises'])
             ->orderBy('week_number')
             ->get()
             ->map(function ($week, $index) {
                 $weekNumber = $week->week_number > 1 ? $week->week_number : ($index + 1);
-
+    
                 return [
                     'id' => $week->id,
                     'number' => $weekNumber,
                     'days' => $week->days->sortBy('day_number')->map(function ($day, $dayIndex) {
                         $dayNumber = $day->day_number > 1 ? $day->day_number : ($dayIndex + 1);
-
+    
                         // Filter exercises to only include those with actual data
                         $filledExercises = $day->exerciseItems->filter(function ($ex) {
                             return !empty($ex->exercise_list_id)
@@ -104,7 +105,7 @@ class DuplicateProgram extends Component
                                 || (!empty($ex->reps) && $ex->reps !== '')
                                 || (!empty($ex->rest) && $ex->rest !== '');
                         });
-
+    
                         return [
                             'id' => $day->id,
                             'number' => $dayNumber,
@@ -113,7 +114,10 @@ class DuplicateProgram extends Component
                             'duration' => $day->duration ?: '',
                             'exercises' => $filledExercises->map(function ($ex, $exIndex) {
                                 $itemId = $ex->item_id > 0 ? $ex->item_id : ($exIndex + 1);
-
+    
+                                // Include alternates info
+                                $alternatesCount = $ex->alternateExercises ? $ex->alternateExercises->count() : 0;
+    
                                 return [
                                     'id' => $ex->id,
                                     'item_id' => $itemId,
@@ -126,7 +130,8 @@ class DuplicateProgram extends Component
                                     'intensity' => $ex->intensity,
                                     'weight' => $ex->weight,
                                     'weight_value' => $ex->weight_value,
-                                    'notes' => $ex->notes
+                                    'notes' => $ex->notes,
+                                    'alternates_count' => $alternatesCount
                                 ];
                             })->values()->toArray()
                         ];
@@ -362,96 +367,112 @@ class DuplicateProgram extends Component
     }
 
     public function copyProgram()
-    {
-        if (empty($this->title)) {
-            $this->addError('title', 'Please enter a program title');
-            $this->dispatch('scroll-modal-to-top');
-            return;
-        }
+{
+    if (empty($this->title)) {
+        $this->addError('title', 'Please enter a program title');
+        $this->dispatch('scroll-modal-to-top');
+        return;
+    }
 
-        if (empty($this->category_id)) {
-            $this->addError('category_id', 'Please select a category');
-            $this->dispatch('scroll-modal-to-top');
-            return;
-        }
+    if (empty($this->category_id)) {
+        $this->addError('category_id', 'Please select a category');
+        $this->dispatch('scroll-modal-to-top');
+        return;
+    }
 
-        try {
-            $this->validate([
-                'title' => 'required|string|max:255|unique:new_exercises,title',
-                'category_id' => 'required|integer|exists:categories,id',
-                'image' => 'nullable|image|max:2048',
-                'youtube_link' => 'nullable|string|max:255',
-                'program_type' => 'required|in:generic,premium',
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            $this->dispatch('scroll-modal-to-top');
-            throw $e;
-        }
-
-        $imageURL = null;
-        if ($this->image) {
-            $filename = time() . '.' . $this->image->getClientOriginalExtension();
-            $this->image->storeAs('uploads/exercise', $filename, 'public');
-            $imageURL = 'uploads/exercise/' . $filename;
-        }
-    
-        // 🆕 Create new program
-        $newProgram = NewExercise::create([
-            'title' => $this->title,
-            'category_id' => $this->category_id,
-            'image' => $imageURL,
-            'type' => $this->program_type,
-            'youtube_link' => $this->youtube_link,
+    try {
+        $this->validate([
+            'title' => 'required|string|max:255|unique:new_exercises,title',
+            'category_id' => 'required|integer|exists:categories,id',
+            'image' => 'nullable|image|max:2048',
+            'youtube_link' => 'nullable|string|max:255',
+            'program_type' => 'required|in:generic,premium',
         ]);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        $this->dispatch('scroll-modal-to-top');
+        throw $e;
+    }
 
-        // ✅ Copy all weeks, days, and exercises from existing program
-        $sourceProgram = NewExercise::with(['weeks.days.exerciseItem'])
-            ->find($this->program_id); // Make sure program_id is passed when opening modal
-        
-        if ($sourceProgram) {
-            foreach ($sourceProgram->weeks as $week) {
-                $newWeek = NewExerciseWeek::create([
-                    'new_exercise_id' => $newProgram->id,
-                    'week_number' => $week->week_number,
+    $imageURL = null;
+    if ($this->image) {
+        $filename = time() . '.' . $this->image->getClientOriginalExtension();
+        $this->image->storeAs('uploads/exercise', $filename, 'public');
+        $imageURL = 'uploads/exercise/' . $filename;
+    }
+
+    // Create new program
+    $newProgram = NewExercise::create([
+        'title' => $this->title,
+        'category_id' => $this->category_id,
+        'image' => $imageURL,
+        'type' => $this->program_type,
+        'youtube_link' => $this->youtube_link,
+    ]);
+
+    // Copy all weeks, days, exercises AND alternates from existing program
+    $sourceProgram = NewExercise::with(['weeks.days.exerciseItems.alternateExercises'])
+        ->find($this->program_id);
+    
+    if ($sourceProgram) {
+        foreach ($sourceProgram->weeks as $week) {
+            $newWeek = NewExerciseWeek::create([
+                'new_exercise_id' => $newProgram->id,
+                'week_number' => $week->week_number,
+            ]);
+
+            foreach ($week->days as $day) {
+                $newDay = NewExerciseWeekDay::create([
+                    'new_exercise_week_id' => $newWeek->id,
+                    'day_number' => $day->day_number,
+                    'day_name' => $day->day_name,
+                    'title' => $day->title,
+                    'summary' => $day->summary,
+                    'duration' => $day->duration,
                 ]);
 
-                foreach ($week->days as $day) {
-                    $newDay = NewExerciseWeekDay::create([
-                        'new_exercise_week_id' => $newWeek->id,
-                        'day_number' => $day->day_number,
-                        'day_name' => $day->day_name,
-                        'title' => $day->title,
-                        'summary' => $day->summary,
-                        'duration' => $day->duration,
+                foreach ($day->exerciseItems as $exercise) {
+                    $newExercise = NewExerciseWeekDayItem::create([
+                        'new_exercise_week_day_id' => $newDay->id,
+                        'item_id' => $exercise->item_id,
+                        'exercise_list_id' => $exercise->exercise_list_id,
+                        'name' => $exercise->name ?? '',
+                        'sets' => $exercise->sets ?? '',
+                        'reps' => $exercise->reps ?? '',
+                        'rest' => $exercise->rest ?? '',
+                        'tempo' => $exercise->tempo ?? '',
+                        'intensity' => $exercise->intensity ?? 'Moderate',
+                        'weight' => $exercise->weight ?? 'Yes',
+                        'weight_value' => $exercise->weight_value ?? '',
+                        'notes' => $exercise->notes ?? ''
                     ]);
 
-                    foreach ($day->exerciseItem as $exercise) {
-                        NewExerciseWeekDayItem::create([
-                            'new_exercise_week_day_id' =>  $newDay->id,
-                            'item_id' => $exercise->item_id,
-                            'exercise_list_id' => $exercise->exercise_list_id,
-                            'name' => $exercise->name ?? '',
-                            'sets' => $exercise->sets ?? '',
-                            'reps' => $exercise->reps ?? '',
-                            'rest' => $exercise->rest ?? '',
-                            'tempo' => $exercise->tempo ?? '',
-                            'intensity' => $exercise->intensity ?? 'Moderate',
-                            'weight' => $exercise->weight ?? 'Yes',
-                            'weight_value' => $exercise->weight_value ?? '',
-                            'notes' => $exercise->notes ?? ''
-                        ]);
+                    // Copy alternate exercises with pivot data
+                    if ($exercise->alternateExercises->count() > 0) {
+                        foreach ($exercise->alternateExercises as $alternate) {
+                            $newExercise->alternateExercises()->attach($alternate->id, [
+                                'sets' => $alternate->pivot->sets ?? null,
+                                'reps' => $alternate->pivot->reps ?? null,
+                                'rest' => $alternate->pivot->rest ?? null,
+                                'tempo' => $alternate->pivot->tempo ?? null,
+                                'intensity' => $alternate->pivot->intensity ?? null,
+                                'weight' => $alternate->pivot->weight ?? $alternate->weight ?? 'No',
+                                'weight_value' => $alternate->pivot->weight_value ?? $alternate->weight_value ?? null,
+                                'notes' => $alternate->pivot->notes ?? $alternate->notes ?? null,
+                            ]);
+                        }
                     }
                 }
             }
         }
-
-        $this->closeCopyModal();
-        $this->reset(['title', 'category_id', 'image', 'youtube_link','program_type']);
-
-        session()->flash('success', 'Program copied successfully!');
-        return redirect()->route('admin.new.exercise.manage')
-                        ->with('message', 'Program copied successfully!');
     }
+
+    $this->closeCopyModal();
+    $this->reset(['title', 'category_id', 'image', 'youtube_link', 'program_type']);
+
+    session()->flash('success', 'Program copied successfully...');
+    return redirect()->route('admin.new.exercise.manage')
+                    ->with('message', 'Program copied successfully...');
+}
 
     public function updatedSelectedExistingProgram($value)
     {
@@ -767,119 +788,100 @@ class DuplicateProgram extends Component
 
     public function confirmCopy()
     {
-        if (!$this->validateMappings()) {
-            return; // Stop execution if validation fails
+        // Prevent double submission
+        if ($this->isProcessing) {
+            return;
         }
-        if ($this->copyMode === 'new') {
-            // Remove the try-catch validation block from here
+        
+        $this->isProcessing = true;
 
-            $this->copyToNewProgram();
-        } elseif ($this->copyMode === 'existing') {
-            try {
+        // Quick validation first
+        if ($this->copyMode === 'new') {
+            if (empty($this->title)) {
+                $this->addError('title', 'Please enter a program title');
+                $this->dispatch('scroll-modal-to-top');
+                $this->isProcessing = false;
+                return;
+            }
+
+            if (empty($this->category_id)) {
+                $this->addError('category_id', 'Please select a category');
+                $this->dispatch('scroll-modal-to-top');
+                $this->isProcessing = false;
+                return;
+            }
+        }
+
+        // Validate mappings
+        if (!$this->validateMappings()) {
+            $this->isProcessing = false;
+            return;
+        }
+
+        try {
+            if ($this->copyMode === 'new') {
+                $this->copyToNewProgram();
+            } elseif ($this->copyMode === 'existing') {
                 $this->validate([
                     'selectedExistingProgram' => 'required|exists:new_exercises,id',
                 ]);
-            } catch (\Illuminate\Validation\ValidationException $e) {
-                $this->dispatch('show-error', message: 'Error: ' . $e->getMessage());
-                throw $e;
+                $this->copyToExistingProgram();
             }
-            $this->copyToExistingProgram();
+        } catch (\Exception $e) {
+            $this->dispatch('show-error', message: 'Error: ' . $e->getMessage());
+            $this->isProcessing = false;
         }
     }
 
-    private function copyToNewProgram()
-    {
-        if (empty($this->title)) {
-            $this->addError('title', 'Please enter a program title');
-            $this->dispatch('scroll-modal-to-top');
-            return;
-        }
-
-        if (empty($this->category_id)) {
-            $this->addError('category_id', 'Please select a category');
-            $this->dispatch('scroll-modal-to-top');
-            return;
-        }
-        try {
-            $this->validate([
-                'title' => 'required|string|max:255|unique:new_exercises,title',
-                'category_id' => 'required|integer|exists:categories,id',
-                'image' => 'nullable|image|max:2048',
-                'program_type' => 'required|in:generic,premium', 
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-
-            $this->dispatch('scroll-modal-to-top');
-            throw $e;
-        }
-
-        $imageURL = null;
-        // Handle image upload using trait method
-
-        if ($this->image) {
-            $filename = time() . '.' . $this->image->getClientOriginalExtension();
-            $this->image->storeAs('uploads/exercise', $filename, 'public');
-            $imageURL = 'uploads/exercise/' . $filename;
-        }
-
-        $newProgram = NewExercise::create([
-            'title' => $this->title,
-            'category_id' => $this->category_id,
-            'image' => $imageURL,
-            'type' => $this->program_type,
-            'youtube_link' => $this->youtube_link,
+   private function copyToNewProgram()
+{
+    try {
+        $this->validate([
+            'title' => 'required|string|max:255|unique:new_exercises,title',
+            'category_id' => 'required|integer|exists:categories,id',
+            'image' => 'nullable|image|max:2048',
+            'program_type' => 'required|in:generic,premium',
         ]);
-
-        // Find max target week needed
-        $maxWeek = 0;
-        foreach ($this->mappings as $mapping) {
-            if (!empty($mapping['targetWeek'])) {
-                $maxWeek = max($maxWeek, (int)$mapping['targetWeek']);
-            }
-            if ($mapping['type'] === 'exercises') {
-                foreach ($mapping['exercises'] as $ex) {
-                    if (!empty($ex['targetWeek'])) {
-                        $maxWeek = max($maxWeek, (int)$ex['targetWeek']);
-                    }
-                }
-            }
-        }
-
-        // Create weeks
-        $createdWeeks = [];
-        for ($weekNum = 1; $weekNum <= $maxWeek; $weekNum++) {
-            $week = NewExerciseWeek::create([
-                'new_exercise_id' => $newProgram->id,
-                'week_number' => $weekNum
-            ]);
-            $createdWeeks[$weekNum] = $week;
-            //  $this->createDefaultDays($week->id);
-        }
-
-        // Process mappings
-        foreach ($this->mappings as $mapping) {
-            if ($mapping['type'] === 'fullWeek') {
-                $targetWeek = $createdWeeks[(int)$mapping['targetWeek']];
-                $this->copyFullWeek($mapping['sourceWeekId'], $targetWeek->id);
-            } elseif ($mapping['type'] === 'fullDay') {
-                $targetWeek = $createdWeeks[(int)$mapping['targetWeek']];
-                $targetDayNum = (int)$mapping['targetDay'];
-                $this->copyFullDay($mapping['sourceDayId'], $targetWeek->id, $targetDayNum);
-            } elseif ($mapping['type'] === 'exercises') {
-                foreach ($mapping['exercises'] as $ex) {
-                    $targetWeek = $createdWeeks[(int)$ex['targetWeek']];
-                    $targetDayNum = (int)$ex['targetDay'];
-                    $this->copySingleExercise($ex['id'], $targetWeek->id, $targetDayNum);
-                }
-            }
-        }
-
-        $this->closeCopyModal();
-        $this->reset(['selectedWeeks', 'selectedDays', 'selectedExercises', 'mappings', 'title', 'category_id', 'image']);
-
-        session()->flash('success', 'Program created successfully!');
-        return redirect('/admin/new/exercise/manage')->with('message', 'Program created successfully!');
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        $this->dispatch('scroll-modal-to-top');
+        $this->isProcessing = false;
+        throw $e;
     }
+
+    // Disable real-time updates during processing
+    $this->skipRender();
+
+    $imageURL = null;
+    if ($this->image) {
+        $filename = time() . '.' . $this->image->getClientOriginalExtension();
+        $this->image->storeAs('uploads/exercise', $filename, 'public');
+        $imageURL = 'uploads/exercise/' . $filename;
+    }
+
+    $newProgram = NewExercise::create([
+        'title' => $this->title,
+        'category_id' => $this->category_id,
+        'image' => $imageURL,
+        'type' => $this->program_type,
+        'youtube_link' => $this->youtube_link,
+    ]);
+
+    // Find max target week needed
+    $maxWeek = $this->getMaxTargetWeek();
+
+    // Create weeks in batch
+    $createdWeeks = $this->createWeeksBatch($newProgram->id, $maxWeek);
+
+    // Process mappings in optimized way
+    $this->processMappingsBatch($createdWeeks);
+
+    $this->isProcessing = false;
+    $this->closeCopyModal();
+    $this->reset(['selectedWeeks', 'selectedDays', 'selectedExercises', 'mappings', 'title', 'category_id', 'image']);
+
+    session()->flash('success', 'Program created successfully!');
+    return redirect('/admin/new/exercise/manage')->with('message', 'Program created successfully!');
+}
 
     public function updatedImage()
     {
@@ -909,7 +911,7 @@ class DuplicateProgram extends Component
 
     private function copyFullDayContent($sourceDayId, $targetWeekModel, $targetDayNumber)
     {
-        $sourceDay = NewExerciseWeekDay::with('exerciseItems')->findOrFail($sourceDayId);
+        $sourceDay = NewExerciseWeekDay::with('exerciseItems.alternateExercises')->findOrFail($sourceDayId);
         $targetDay = $this->ensureTargetDayExists($targetWeekModel, $targetDayNumber);
 
         $targetDay->update([
@@ -921,7 +923,7 @@ class DuplicateProgram extends Component
         $targetDay->exerciseItems()->delete();
 
         foreach ($sourceDay->exerciseItems as $exercise) {
-            NewExerciseWeekDayItem::create([
+            $newExercise = NewExerciseWeekDayItem::create([
                 'new_exercise_week_day_id' => $targetDay->id,
                 'item_id' => $exercise->item_id,
                 'exercise_list_id' => $exercise->exercise_list_id,
@@ -935,6 +937,9 @@ class DuplicateProgram extends Component
                 'weight_value' => $exercise->weight_value ?? '',
                 'notes' => $exercise->notes ?? ''
             ]);
+
+            // Copy alternate exercises
+            $this->copyAlternateExercises($exercise, $newExercise);
         }
     }
 
@@ -965,7 +970,7 @@ class DuplicateProgram extends Component
     {
         $targetDay = $this->ensureTargetDayExists($targetWeekModel, $targetDayNumber);
 
-        NewExerciseWeekDayItem::firstOrCreate([
+        $newExercise = NewExerciseWeekDayItem::firstOrCreate([
             'new_exercise_week_day_id' => $targetDay->id,
             'item_id' => $sourceExercise->item_id,
         ], [
@@ -980,11 +985,19 @@ class DuplicateProgram extends Component
             'weight_value' => $sourceExercise->weight_value ?? '',
             'notes' => $sourceExercise->notes ?? ''
         ]);
+
+        // Copy alternate exercises
+        $sourceExerciseWithAlternates = NewExerciseWeekDayItem::with('alternateExercises')
+            ->find($sourceExercise->id);
+        
+        if ($sourceExerciseWithAlternates) {
+            $this->copyAlternateExercises($sourceExerciseWithAlternates, $newExercise);
+        }
     }
 
     private function copyFullWeekContent($sourceWeekId, $targetWeekModel)
     {
-        $sourceWeek = NewExerciseWeek::with('days.exerciseItems')->findOrFail($sourceWeekId);
+        $sourceWeek = NewExerciseWeek::with('days.exerciseItems.alternateExercises')->findOrFail($sourceWeekId);
 
         // Delete existing days in target week
         NewExerciseWeekDay::where('new_exercise_week_id', $targetWeekModel->id)->delete();
@@ -999,7 +1012,7 @@ class DuplicateProgram extends Component
             ]);
 
             foreach ($day->exerciseItems as $exercise) {
-                NewExerciseWeekDayItem::create([
+                $newExercise = NewExerciseWeekDayItem::create([
                     'new_exercise_week_day_id' => $newDay->id,
                     'item_id' => $exercise->item_id,
                     'exercise_list_id' => $exercise->exercise_list_id,
@@ -1013,6 +1026,9 @@ class DuplicateProgram extends Component
                     'weight_value' => $exercise->weight_value ?? '',
                     'notes' => $exercise->notes ?? ''
                 ]);
+
+                // Copy alternate exercises
+                $this->copyAlternateExercises($exercise, $newExercise);
             }
         }
     }
@@ -1128,27 +1144,27 @@ class DuplicateProgram extends Component
 
     private function copyFullDay($sourceDayId, $targetWeekId, $targetDayNumber)
     {
-        $sourceDay = NewExerciseWeekDay::with('exerciseItems')->findOrFail($sourceDayId);
-
+        $sourceDay = NewExerciseWeekDay::with('exerciseItems.alternateExercises')->findOrFail($sourceDayId);
+    
         $targetDay = NewExerciseWeekDay::updateOrCreate(
             ['new_exercise_week_id' => $targetWeekId, 'day_number' => $targetDayNumber],
             ['title' => $sourceDay->title ?: "Day {$targetDayNumber} Workout", 'summary' => $sourceDay->summary, 'duration' => $sourceDay->duration]
         );
-
+    
         $targetDay->exerciseItems()->delete();
-
+    
         // Only copy exercises with actual data
-        $filledExercises = $sourceDay->exerciseItems()->orderBy('item_id')->get()->filter(function ($exercise) {
+        $filledExercises = $sourceDay->exerciseItems()->with('alternateExercises')->orderBy('item_id')->get()->filter(function ($exercise) {
             return !empty($exercise->exercise_list_id)
                 || (!empty($exercise->sets) && $exercise->sets !== '')
                 || (!empty($exercise->reps) && $exercise->reps !== '')
                 || (!empty($exercise->rest) && $exercise->rest !== '');
         });
-
+    
         foreach ($filledExercises as $exercise) {
             $itemId = $exercise->item_id ?: ($targetDay->exerciseItems()->max('item_id') + 1 ?? 1);
-
-            NewExerciseWeekDayItem::create([
+    
+            $newExercise = NewExerciseWeekDayItem::create([
                 'new_exercise_week_day_id' => $targetDay->id,
                 'item_id' => $itemId,
                 'exercise_list_id' => $exercise->exercise_list_id,
@@ -1162,13 +1178,16 @@ class DuplicateProgram extends Component
                 'weight_value' => $exercise->weight_value,
                 'notes' => $exercise->notes
             ]);
+    
+            // Copy alternate exercises
+            $this->copyAlternateExercises($exercise, $newExercise);
         }
     }
 
     private function copySingleExercise($exerciseId, $targetWeekId, $targetDayNumber)
     {
-        $sourceExercise = NewExerciseWeekDayItem::findOrFail($exerciseId);
-
+        $sourceExercise = NewExerciseWeekDayItem::with('alternateExercises')->findOrFail($exerciseId);
+    
         // Verify exercise has meaningful data before copying
         if (
             empty($sourceExercise->exercise_list_id)
@@ -1176,15 +1195,14 @@ class DuplicateProgram extends Component
             && empty($sourceExercise->reps)
             && empty($sourceExercise->rest)
         ) {
-
             return;
         }
-
+    
         $targetDay = NewExerciseWeekDay::firstOrCreate(
             ['new_exercise_week_id' => $targetWeekId, 'day_number' => $targetDayNumber],
             ['title' => "Day {$targetDayNumber} Workout", 'summary' => '', 'duration' => '']
         );
-
+    
         // Find first empty exercise in the target day
         $emptyExercise = NewExerciseWeekDayItem::where('new_exercise_week_day_id', $targetDay->id)
             ->where(function ($q) {
@@ -1198,7 +1216,7 @@ class DuplicateProgram extends Component
             })
             ->orderBy('item_id', 'asc')
             ->first();
-
+    
         if ($emptyExercise) {
             $emptyExercise->update([
                 'exercise_list_id' => $sourceExercise->exercise_list_id,
@@ -1212,11 +1230,14 @@ class DuplicateProgram extends Component
                 'weight_value' => $sourceExercise->weight_value,
                 'notes' => $sourceExercise->notes,
             ]);
+    
+            // Copy alternate exercises to updated exercise
+            $this->copyAlternateExercises($sourceExercise, $emptyExercise);
         } else {
             $maxItemId = NewExerciseWeekDayItem::where('new_exercise_week_day_id', $targetDay->id)->max('item_id') ?? 0;
             $newItemId = $maxItemId + 1;
-
-            NewExerciseWeekDayItem::create([
+    
+            $newExercise = NewExerciseWeekDayItem::create([
                 'new_exercise_week_day_id' => $targetDay->id,
                 'item_id' => $newItemId,
                 'exercise_list_id' => $sourceExercise->exercise_list_id,
@@ -1230,8 +1251,33 @@ class DuplicateProgram extends Component
                 'weight_value' => $sourceExercise->weight_value,
                 'notes' => $sourceExercise->notes,
             ]);
+    
+            // Copy alternate exercises to new exercise
+            $this->copyAlternateExercises($sourceExercise, $newExercise);
         }
     }
+    
+/**
+ * Helper method to copy alternate exercises from source to target exercise
+ */
+private function copyAlternateExercises($sourceExercise, $targetExercise)
+{
+    if ($sourceExercise->alternateExercises && $sourceExercise->alternateExercises->count() > 0) {
+        foreach ($sourceExercise->alternateExercises as $alternate) {
+            // Attach alternate with pivot data
+            $targetExercise->alternateExercises()->attach($alternate->id, [
+                'sets' => $alternate->pivot->sets ?? null,
+                'reps' => $alternate->pivot->reps ?? null,
+                'rest' => $alternate->pivot->rest ?? null,
+                'tempo' => $alternate->pivot->tempo ?? null,
+                'intensity' => $alternate->pivot->intensity ?? null,
+                'weight' => $alternate->pivot->weight ?? $alternate->weight ?? 'No',
+                'weight_value' => $alternate->pivot->weight_value ?? $alternate->weight_value ?? null,
+                'notes' => $alternate->pivot->notes ?? $alternate->notes ?? null,
+            ]);
+        }
+    }
+}
 
     public function updatedMappings($value, $key)
     {
@@ -1349,6 +1395,10 @@ class DuplicateProgram extends Component
 
         return true;
     }
+    public function getIsProcessingProperty()
+    {
+        return $this->isProcessing;
+    }
 
     private function copyToExistingProgram()
     {
@@ -1433,6 +1483,116 @@ class DuplicateProgram extends Component
             $this->dispatch('show-error', message: 'Error: ' . $e->getMessage());
         }
     }
+
+    // New helper method to get max target week
+private function getMaxTargetWeek()
+{
+    $maxWeek = 0;
+    foreach ($this->mappings as $mapping) {
+        if (!empty($mapping['targetWeek'])) {
+            $maxWeek = max($maxWeek, (int)$mapping['targetWeek']);
+        }
+        if ($mapping['type'] === 'exercises') {
+            foreach ($mapping['exercises'] as $ex) {
+                if (!empty($ex['targetWeek'])) {
+                    $maxWeek = max($maxWeek, (int)$ex['targetWeek']);
+                }
+            }
+        }
+    }
+    return $maxWeek;
+}
+
+// New helper method to create weeks in batch
+private function createWeeksBatch($programId, $maxWeek)
+{
+    $createdWeeks = [];
+    $weeksData = [];
+    
+    for ($weekNum = 1; $weekNum <= $maxWeek; $weekNum++) {
+        $weeksData[] = [
+            'new_exercise_id' => $programId,
+            'week_number' => $weekNum,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+    }
+    
+    // Bulk insert
+    \DB::table('new_exercise_weeks')->insert($weeksData);
+    
+    // Retrieve created weeks
+    $weeks = NewExerciseWeek::where('new_exercise_id', $programId)
+        ->whereIn('week_number', range(1, $maxWeek))
+        ->get();
+    
+    foreach ($weeks as $week) {
+        $createdWeeks[$week->week_number] = $week;
+    }
+    
+    return $createdWeeks;
+}
+
+// New helper method to process mappings in batch
+private function processMappingsBatch($createdWeeks)
+{
+    // Group operations by type for batch processing
+    $fullWeeks = [];
+    $fullDays = [];
+    $exercises = [];
+    
+    foreach ($this->mappings as $mapping) {
+        if ($mapping['type'] === 'fullWeek') {
+            $fullWeeks[] = [
+                'source' => $mapping['sourceWeekId'],
+                'target' => $createdWeeks[(int)$mapping['targetWeek']]
+            ];
+        } elseif ($mapping['type'] === 'fullDay') {
+            $fullDays[] = [
+                'source' => $mapping['sourceDayId'],
+                'target' => $createdWeeks[(int)$mapping['targetWeek']],
+                'dayNum' => (int)$mapping['targetDay']
+            ];
+        } elseif ($mapping['type'] === 'exercises') {
+            foreach ($mapping['exercises'] as $ex) {
+                $exercises[] = [
+                    'id' => $ex['id'],
+                    'target' => $createdWeeks[(int)$ex['targetWeek']],
+                    'dayNum' => (int)$ex['targetDay']
+                ];
+            }
+        }
+    }
+    
+    // Process in batches
+    foreach ($fullWeeks as $item) {
+        $this->copyFullWeek($item['source'], $item['target']->id);
+    }
+    
+    foreach ($fullDays as $item) {
+        $this->copyFullDay($item['source'], $item['target']->id, $item['dayNum']);
+    }
+    
+    // Group exercises by target location
+    $exercisesByLocation = [];
+    foreach ($exercises as $ex) {
+        $key = $ex['target']->id . '_' . $ex['dayNum'];
+        if (!isset($exercisesByLocation[$key])) {
+            $exercisesByLocation[$key] = [
+                'target' => $ex['target'],
+                'dayNum' => $ex['dayNum'],
+                'exercises' => []
+            ];
+        }
+        $exercisesByLocation[$key]['exercises'][] = $ex['id'];
+    }
+    
+    foreach ($exercisesByLocation as $location) {
+        foreach ($location['exercises'] as $exerciseId) {
+            $this->copySingleExercise($exerciseId, $location['target']->id, $location['dayNum']);
+        }
+    }
+}
 
     public function checkTargetAvailability($mappingKey, $type, $week = null, $day = null)
     {

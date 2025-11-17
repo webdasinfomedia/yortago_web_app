@@ -45,4 +45,15 @@ class AlternateExerciseList extends Model
     {
         return $this->belongsTo(NewExerciseWeekDayItem::class, 'new_exercise_week_day_item_id');
     }
+    
+     public function exerciseItems()
+    {
+        return $this->belongsToMany(
+            NewExerciseWeekDayItem::class,
+            'alternate_exercise_item_pivot',
+            'alternate_exercise_list_id',
+            'new_exercise_week_day_item_id'
+        )->withPivot(['id','sets', 'reps', 'rest', 'tempo', 'intensity', 'weight', 'weight_value', 'notes'])
+          ->withTimestamps();
+    }
 }

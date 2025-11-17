@@ -1,7 +1,7 @@
 <div>
     <div class="container-fluid">
         <style>
-            .week-day-sidebar {
+               .week-day-sidebar {
                 background: #ffffff;
                 border: 1px solid #dee2e6;
                 /* border-top: 1px solid #dee2e6; */
@@ -107,6 +107,13 @@
                 background: linear-gradient(to right, #d38d49, #d76e33); 
                 border-color: #d76e33;
                 color: white;
+            }
+            .main-div{
+                background-color: #FDF9F6 !important;
+                border: 1px solid #D2D2d2 !important;
+                border-radius: 10px !important;
+                padding: 15px 12px 15px 25px !important;
+                
             }
 
             .btn-success-custom {
@@ -369,6 +376,17 @@
     
             // Simple toggle
             const isCurrentlyOpen = accordion.style.display === 'block';
+             // Close ALL other accordions first
+            document.querySelectorAll('[id^="weekDays"]').forEach(acc => {
+                const accWeekId = acc.id.replace('weekDays', '');
+                const accArrow = document.getElementById('arrow' + accWeekId);
+                
+                if (accWeekId != weekId) { // Close others
+                    acc.style.display = 'none';
+                    if (accArrow) accArrow.classList.remove('rotated');
+                    accordionStates.set(accWeekId.toString(), false);
+                }
+            });
             
             if (isCurrentlyOpen) {
                 accordion.style.display = 'none';
@@ -401,22 +419,22 @@
             }
         }
     
-        window.addEventListener('sync-week-accordion', event => {
-            const weekId = event.detail.weekId;
+        // window.addEventListener('sync-week-accordion', event => {
+        //     const weekId = event.detail.weekId;
             
-            // Update accordion states map
-            accordionStates.forEach((isOpen, key) => {
-                // Keep all other open weeks unchanged
-                if (key === weekId.toString()) {
-                    accordionStates.set(key, true);
-                }
-            });
+        //     // Update accordion states map
+        //     accordionStates.forEach((isOpen, key) => {
+        //         // Keep all other open weeks unchanged
+        //         if (key === weekId.toString()) {
+        //             accordionStates.set(key, true);
+        //         }
+        //     });
 
-            // Force rotation sync after selection
-            setTimeout(() => {
-                restoreAccordions();
-            }, 20);
-        });
+        //     // Force rotation sync after selection
+        //     setTimeout(() => {
+        //         restoreAccordions();
+        //     }, 20);
+        // });
 
         // Restore accordion states after Livewire updates
         function restoreAccordions() {
@@ -582,25 +600,25 @@
             // });
         });
     
-        // if (typeof MutationObserver !== 'undefined') {
-        //     const observer = new MutationObserver(function(mutations) {
-        //         mutations.forEach(function(mutation) {
-        //             if (mutation.addedNodes.length) {
-        //                 attachValidation();
-        //             }
-        //         });
-        //     });
+        if (typeof MutationObserver !== 'undefined') {
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.addedNodes.length) {
+                        attachValidation();
+                    }
+                });
+            });
     
-        //     document.addEventListener("DOMContentLoaded", function() {
-        //         const targetNode = document.querySelector('.exercise-content');
-        //         if (targetNode) {
-        //             observer.observe(targetNode, {
-        //                 childList: true,
-        //                 subtree: true
-        //             });
-        //         }
-        //     });
-        // }
+            document.addEventListener("DOMContentLoaded", function() {
+                const targetNode = document.querySelector('.exercise-content');
+                if (targetNode) {
+                    observer.observe(targetNode, {
+                        childList: true,
+                        subtree: true
+                    });
+                }
+            });
+        }
         // Add this after the other event listeners in DOMContentLoaded
         window.addEventListener('exercise-updated', event => {
             // Force a small delay to ensure DOM updates
@@ -676,6 +694,7 @@ document.addEventListener('livewire:updated', () => setTimeout(attachWeightHandl
         </div>
     @endif
     
+    <div class="main-div ">
     <div class="d-flex justify-content-between align-items-center  mb-2">
         <div class="programname">Program Title : {{ ucfirst($this->exercise->title) }}</div>
         <a href="{{ route('admin.new.exercise.manage') }}" class="btn btn-rounded btn-secondary btn-sm">
@@ -728,13 +747,13 @@ document.addEventListener('livewire:updated', () => setTimeout(attachWeightHandl
                                 </button>
                                 @endif
                                 @if(count($weeks) > 1)
-                                   <button type="button"
-                                            wire:click="deleteWeek({{ $week['id'] }})"
-                                            wire:confirm="Are you sure you want to delete this week?"
-                                            class="btn btn-danger-custom btn-action"
-                                            title="Delete Week">
-                                        <i class="fa fa-trash"></i>
-                                    </button>
+                                <button type="button"
+                                        wire:click="deleteWeek({{ $week['id'] }})"
+                                        wire:confirm="Are you sure you want to delete this week?"
+                                        class="btn btn-danger-custom btn-action"
+                                        title="Delete Week">
+                                    <i class="fa fa-trash"></i>
+                                </button>
                                 @endif
                             </div>
                         </div>
@@ -769,13 +788,13 @@ document.addEventListener('livewire:updated', () => setTimeout(attachWeightHandl
                                     <i class="fa fa-edit"></i>
                                 </button>
                                 @if(count($week['days']) > 1)
-                                    <button type="button"
-                                            wire:click="deleteDay({{ $day['id'] }})"
-                                            wire:confirm="Are you sure you want to delete this day?"
-                                            class="btn btn-danger-custom btn-action"
-                                            title="Delete Day">
-                                        <i class="fa fa-trash"></i>
-                                    </button>
+                                <button type="button"
+                                        wire:click="deleteDay({{ $day['id'] }})"
+                                        wire:confirm="Are you sure you want to delete this day?"
+                                        class="btn btn-danger-custom btn-action"
+                                        title="Delete Day">
+                                    <i class="fa fa-trash"></i>
+                                </button>
                                 @endif
                             </div>
                         </div>
@@ -832,7 +851,7 @@ document.addEventListener('livewire:updated', () => setTimeout(attachWeightHandl
                                     <span class="ml-2 text-muted">- {{ $exerciseLists->find($exercise['exercise_list_id'])->name }}</span>
                                 @endif
                             </div>
-                          <button type="button"
+                            <button type="button"
                                     wire:click="deleteExercise({{ $exercise['id'] }})"
                                     wire:confirm="Are you sure you want to delete this exercise?"
                                     class="btn btn-danger-custom btn-action"
@@ -942,36 +961,22 @@ document.addEventListener('livewire:updated', () => setTimeout(attachWeightHandl
 
                            
                            <!-- Alternate Exercise Button -->
-                            @if($exercise['exercise_list_id'])
-                                @php
-                                    // Check if there are alternates not linked to THIS specific exercise item
-                                    $hasUnlinkedAlternates = \App\Models\AlternateExerciseList::where('exercise_list_id', $exercise['exercise_list_id'])
-                                        ->where(function($query) {
-                                            $query->whereNull('sets')
-                                                ->orWhereNull('reps')
-                                                ->orWhereNull('rest')
-                                                ->orWhereNull('tempo')
-                                                ->orWhereNull('intensity');
-                                        })
-                                        ->exists();
-                                @endphp
-                                
-                                @if($hasUnlinkedAlternates )
-                                    <div class="row mt-2">
-                                        <div class="col-12 text-right">
-                                            <button type="button" 
-                                                    wire:click="addAlternateExercise({{ $exercise['id'] }})"
-                                                    class="btn btn-primary-custom btn-sm"
-                                                    title="Add Alternate Exercise">
-                                                <i class="fa fa-plus"></i> Add Alternate
-                                            </button>
-                                        </div>
-                                    </div>
-                                @endif
-                            @endif
+                            <!-- Alternate Exercise Button -->
+                        @if($exercise['exercise_list_id'] && $exercise['has_available_alternates'])
+                            <div class="row mt-2">
+                                <div class="col-12 text-right">
+                                    <button type="button" 
+                                            wire:click="addAlternateExercise({{ $exercise['id'] }})"
+                                            class="btn btn-primary-custom btn-sm"
+                                            title="Add Alternate Exercise">
+                                        <i class="fa fa-plus"></i> Add Alternate
+                                    </button>
+                                </div>
+                            </div>
+                        @endif
                             <!-- Alternate Exercises Section -->
                         
-                       @if(isset($exercise['alternates']) && count($exercise['alternates']) > 0)
+                       @if(isset($exercise['alternates']) && count($exercise['alternates']) > 0 )
                         <div class="mt-2 pt-2 border-top">
                             <h6 class="text-primary mb-3">
                                 <i class="fa fa-exchange-alt"></i> Alternate Exercises
@@ -982,11 +987,12 @@ document.addEventListener('livewire:updated', () => setTimeout(attachWeightHandl
                                     <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
                                         <strong> {{ $alternate['name'] }}</strong>
                                         <button type="button"
-                                                onclick="event.stopPropagation(); if(confirm('Are you sure you want to remove this alternate exercise?')) { @this.deleteAlternateExercise({{ $alternate['id'] }}) }"
-                                                class="btn btn-danger-custom btn-action"
-                                                title="Remove Alternate">
-                                            <i class="fa fa-trash"></i> 
-                                        </button>
+                                                    wire:click.stop="deleteAlternateExercise({{ $alternate['id'] }})"
+                                                    wire:confirm="Are you sure you want to remove this alternate exercise?"
+                                                    class="btn btn-danger-custom btn-action"
+                                                    title="Remove Alternate">
+                                                <i class="fa fa-trash"></i> 
+                                            </button>
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
@@ -995,7 +1001,7 @@ document.addEventListener('livewire:updated', () => setTimeout(attachWeightHandl
                                                 <input type="text" 
                                                     name="alt_name_{{ $alternate['id'] }}"
                                                     class="form-control form-control-sm p-0 text-center"
-                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.name" readonly>
+                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.name" value="{{ $alternate['name'] }}" readonly>
                                             </div>
                                             <!-- Sets -->
                                             <div class="col-md-2 mb-1">
@@ -1061,7 +1067,7 @@ document.addEventListener('livewire:updated', () => setTimeout(attachWeightHandl
                                                 <label class="form-label">Weight(kg)</label>
                                                 <input type="text" 
                                                     class="form-control form-control-sm p-0 text-center"
-                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.weight_value">
+                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.weight_value" value="{{ $alternate['weight_value'] }}" >
                                             </div>
                                             @endif
                                         </div>
@@ -1072,9 +1078,10 @@ document.addEventListener('livewire:updated', () => setTimeout(attachWeightHandl
                                                 <label class="form-label">Instructions/Notes</label>
                                                 <textarea class="form-control" 
                                                         rows="2"
-                                                        wire:model.defer="alternates.{{ $alternate['id'] }}.notes"></textarea>
+                                                        wire:model.defer="alternates.{{ $alternate['id'] }}.notes">{{ html_entity_decode(strip_tags($alternate['notes'] ?? '')) }}</textarea>
                                             </div>
                                         </div>
+                                        
 
                                         <div class="row mt-1 justify-content-end">
                                             <button wire:click="saveAlternate({{ $alternate['id'] }})" class="btn btn-primary btn-sm mr-3">
@@ -1122,5 +1129,6 @@ document.addEventListener('livewire:updated', () => setTimeout(attachWeightHandl
                 </div>
             </div>
         </div>
+    </div>
     </div>
 </div>

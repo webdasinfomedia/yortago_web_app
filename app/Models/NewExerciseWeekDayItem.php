@@ -32,7 +32,13 @@ class NewExerciseWeekDayItem extends Model
 
      public function alternateExercises()
     {
-        return $this->hasMany(AlternateExerciseList::class, 'new_exercise_week_day_item_id');
+        return $this->belongsToMany(
+            AlternateExerciseList::class,
+            'alternate_exercise_item_pivot',
+            'new_exercise_week_day_item_id',
+            'alternate_exercise_list_id'
+        )->withPivot(['id','sets', 'reps', 'rest', 'tempo', 'intensity', 'weight', 'weight_value', 'notes'])
+        ->withTimestamps();
     }
 
 }
