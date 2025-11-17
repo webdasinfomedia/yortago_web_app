@@ -145,7 +145,7 @@
             </li>
             <li><a class="ai-icon" href="{{ route('admin.new.exercise.manage') }}" aria-expanded="false">
                     <i class="la la-dumbbell"></i>
-                    <span class="nav-text">Exercise Program</span>
+                    <span class="nav-text">Program Management</span>
                 </a>
             </li>
             <li><a class="ai-icon" href="{{ route('admin.exercise.program.list') }}" aria-expanded="false">
@@ -224,6 +224,12 @@
                 </a>
 
             </li>
+            <li><a class="ai-icon" href="{{ route('admin.notifications.index') }}" aria-expanded="false">
+                    <i class="la la-bell"></i>
+                    <span class="nav-text">Notifications</span>
+                </a>
+
+            </li>
             <li><a class="ai-icon" href="{{ route('admin.in.person.list') }}" aria-expanded="false">
                     <i class="la la-user"></i>
                     <span class="nav-text">In Person Contact</span>
@@ -280,12 +286,13 @@
             });
         });
     });
+
     document.addEventListener('DOMContentLoaded', function() {
     const hamburger = document.querySelector('.hamburger');
     const body = document.body;
     const deznav = document.querySelector('.deznav');
     const navHeader = document.querySelector('.nav-header');
-    
+
     // Initialize for 800-1300px screens - START WITH FULL SIDEBAR
     function initializeForScreenSize() {
         const screenWidth = window.innerWidth;
@@ -324,6 +331,7 @@
     // Hamburger click event
     if (hamburger) {
         hamburger.addEventListener('click', toggleSidebar);
+        console.log(hamburger);
     }
     
     // Window resize handler

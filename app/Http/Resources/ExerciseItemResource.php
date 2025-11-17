@@ -59,7 +59,7 @@ class ExerciseItemResource extends JsonResource
 
             // Prepare log data
             $logData = $log ? [
-                 'sets' => $this->decodeArrayValue($log->sets),
+                'sets' => $this->decodeArrayValue($log->sets),
                 'reps' => $this->decodeArrayValue($log->reps),
                 'weight' => $this->decodeArrayValue($log->weight),
                 'logged_at' => $log->created_at->format('Y-m-d H:i:s'),
@@ -76,11 +76,36 @@ class ExerciseItemResource extends JsonResource
                     'name' => $log->replacedExerciseItem->name,
                 ] : null,
             ] : null;
-        // Check if alternate exercises exist
-        $alternateExercises = [];
-        if ($idNeadToBeSearchedInLog->exercise_list_id) {
-            $alternateExercises = AlternateExerciseList::where('exercise_list_id', $idNeadToBeSearchedInLog->exercise_list_id)->where('new_exercise_week_day_item_id', $idNeadToBeSearchedInLog->id)
-                ->get();
+        
+        // Fetch alternate exercises from pivot table
+        $alternateExercises = collect([]);
+        
+        if ($idNeadToBeSearchedInLog->id) {
+            // Get alternates linked to this specific exercise item via pivot table
+            $alternateExercises = $idNeadToBeSearchedInLog->alternateExercises()
+                ->get()
+                ->map(function($alternate) {
+                    return [
+                        'id' => $alternate->id,
+                        'exercise_list_id' => $alternate->exercise_list_id,
+                        'name' => $alternate->name,
+                        'body_part' => $alternate->bodyPart?->name ?? null,
+                        'body_part_id' => $alternate->body_part_id,
+                        'exercise_style' => $alternate->exerciseStyle?->name ?? null,
+                        'exercise_style_id' => $alternate->exercise_style_id,
+                        // Use pivot data if available, otherwise fall back to alternate's own data
+                        'sets' => $alternate->pivot->sets ?? $alternate->sets,
+                        'reps' => $alternate->pivot->reps ?? $alternate->reps,
+                        'weight' => $alternate->pivot->weight ?? $alternate->weight,
+                        'weight_value' => $alternate->pivot->weight_value ?? $alternate->weight_value,
+                        'rest' => $alternate->pivot->rest ?? $alternate->rest,
+                        'tempo' => $alternate->pivot->tempo ?? $alternate->tempo,
+                        'intensity' => $alternate->pivot->intensity ?? $alternate->intensity,
+                        'video_link' => $alternate->video_link,
+                        'notes' => $alternate->pivot->notes ?? $alternate->notes,
+                        'image' => $alternate->image ? URL::to($alternate->image) : null,
+                    ];
+                });
         }
 
         // Return the JSON response
@@ -104,31 +129,31 @@ class ExerciseItemResource extends JsonResource
             'rest' => $this->rest,
             'video_link' => $idNeadToBeSearchedInLog?->exercise_list?->video_link,
             'image' => $idNeadToBeSearchedInLog?->exercise_list?->image ? URL::to($this?->exercise_list?->image) : null,
-            'alternate_exercises' => AlternateExerciseListResource::collection($alternateExercises),
+            'alternate_exercises' => $alternateExercises,
             // Conditionally include logs and swap data if the user relation is loaded
             'is_logged' => $isLogged, // Show logged status only if with user relation
             'log_data' =>  $logData , // Show log details only if with user relation
         ];
 
     }
+    
     private function decodeArrayValue($value)
-{
-    // Try to decode JSON first (e.g. "[1,2,3]" → [1,2,3])
-    $decoded = json_decode($value, true);
+    {
+        // Try to decode JSON first (e.g. "[1,2,3]" → [1,2,3])
+        $decoded = json_decode($value, true);
 
-    // If it’s valid JSON and returns an array, use that
-    if (is_array($decoded)) {
-        return $decoded;
+        // If it's valid JSON and returns an array, use that
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        // Otherwise, clean manually: remove brackets and explode by comma
+        $cleaned = trim($value, "[]");
+        if ($cleaned === '') {
+            return [];
+        }
+
+        // Convert each element to number or string as needed
+        return array_map('trim', explode(',', $cleaned));
     }
-
-    // Otherwise, clean manually: remove brackets and explode by comma
-    $cleaned = trim($value, "[]");
-    if ($cleaned === '') {
-        return [];
-    }
-
-    // Convert each element to number or string as needed
-    return array_map('trim', explode(',', $cleaned));
-}
-
 }

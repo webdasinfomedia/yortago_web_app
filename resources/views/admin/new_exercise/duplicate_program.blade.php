@@ -1,6 +1,6 @@
 @extends('admin.layouts.master')
 @section('admin_title')
-    Duplicate Exercise Program
+    Duplicate Program
 @endsection
 
 @section('css')
@@ -68,7 +68,7 @@
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
                 <li class="breadcrumb-item"><a href="{{ route('admin.new.exercise.manage') }}">Exercise Programs</a></li>
-                <li class="breadcrumb-item active">Duplicate Exercise Program</li>
+                <li class="breadcrumb-item active">Duplicate Program</li>
             </ol>
         </div>
         

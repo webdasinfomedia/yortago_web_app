@@ -199,6 +199,7 @@
                 .programname{
                     font-weight: 600;
                     font-size:20px;
+                    color: #333333;
                 }
                 .selection-checkbox {
                     margin-right: 10px;
@@ -225,12 +226,20 @@
              .select2-container--default .select2-selection--single .select2-selection__rendered{
                 color:#6e6e6e !important;
                 line-height: 30px !important;
+                font-size: 14px !important;
             }
             .select2-container--default .select2-selection--single .select2-selection__clear{
                 height: 30px !important;
+                font-size: 14px !important;
             }
             .select2-container--default .select2-selection--single .select2-selection__arrow{
                 height: 30px !important;
+                font-size: 14px !important;
+            }
+            .select2-container--default .select2-search--dropdown .select2-search__field {
+                color: #6e6e6e;
+                border: 1px solid #aaa;
+                font-size: 14px;
             }
             .text-muted , .text-info{
                 font-size: 14px;
@@ -256,6 +265,9 @@
             .program-type{
                 font-size: 14px !important;
                 font-weight: 400 !important;
+            }
+             .btn-primary:hover{
+                color: white !important;
             }
         </style>
             

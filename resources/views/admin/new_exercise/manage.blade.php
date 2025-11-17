@@ -1,6 +1,6 @@
 @extends('admin.layouts.master')
 @section('admin_title')
-    Manage Exercise Program
+    Manage Programs
 @endsection
 
 @section('css')
@@ -313,7 +313,7 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="card-title">Exercise Program </h4>
+                        <h4 class="card-title">Manage Programs </h4>
                         @if($errors->any())
                             <small class="alert alert-danger">{{$errors->first()}}</small>
                         @endif

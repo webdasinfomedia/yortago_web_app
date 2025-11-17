@@ -33,10 +33,10 @@ class NewExerciseController extends Controller
 
     public function manage_exercise()
     {
-        \Log::info('manage');
+        // \Log::info('manage');
         // $lists = NewExercise::whereHas('age')->whereHas('gender')->whereHas('experience_level')->orderBy('id', 'desc')->get();
         $lists = NewExercise::orderBy('id', 'desc')->get();
-        return view('admin.new_exercise.manage', get_defined_vars())->with('title', 'Manage Exercise');
+        return view('admin.new_exercise.manage', get_defined_vars())->with('title', 'Manage Programs');
     }
 
     public function create_exercise_program(Request $request)
@@ -190,14 +190,14 @@ class NewExerciseController extends Controller
     public function create_exercise(Request $request)
     {
         $exercise = null;
-        $title = 'Create Exercise';
+        $title = 'Create Program';
 
         if ($request->has('id')) {
             $exercise = NewExercise::findOrFail(decrypt($request->id));
 
             // Only show "Edit Exercise" when coming from the actual Edit button
             if ($request->query('from') === 'edit') {
-                $title = 'Edit Exercise';
+                $title = 'Edit Program';
             }
         }
 
@@ -534,7 +534,7 @@ public function duplicate_exercise_program(Request $request)
 
     return view('admin.new_exercise.duplicate_program', [
         'encryptedId' => encrypt($exercise->id), // pass encrypted ID
-        'title' => 'Duplicate Exercise Program',
+        'title' => 'Duplicate Program',
     ]);
 }
 

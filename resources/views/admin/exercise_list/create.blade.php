@@ -416,7 +416,7 @@ document.getElementById('alternateYoutubeLink').addEventListener('blur', functio
 
 function validateYoutubeLink(input, errorId) {
     const errorMessage = document.getElementById(errorId);
-    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/|embed\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}([&?][^\s]*)?$/;
+    const youtubeRegex = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/.+$/;
 
     if (!youtubeRegex.test(input.value) && input.value.trim() !== "") {
         errorMessage.style.display = 'block';
@@ -533,7 +533,7 @@ document.getElementById('mainExerciseForm').addEventListener('submit', function(
         showValidationError(youtubeLink, 'The YouTube link field is required.');
         if (!firstError) firstError = youtubeLink;
     } else {
-       const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/|embed\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}([&?][^\s]*)?$/;
+       const youtubeRegex = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/.+$/;
 
         if (!youtubeRegex.test(youtubeLink.value)) {
             isValid = false;
@@ -613,8 +613,7 @@ document.getElementById('alternateExerciseForm').addEventListener('submit', func
             showValidationError(youtubeLink, 'The YouTube link field is required.');
             if (!firstError) firstError = youtubeLink;
         } else {
-           const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/|embed\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}([&?][^\s]*)?$/;
-
+           const youtubeRegex = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/.+$/;
             if (!youtubeRegex.test(youtubeLink.value)) {
                 isValid = false;
                 showValidationError(youtubeLink, 'Please enter a valid YouTube link.');
