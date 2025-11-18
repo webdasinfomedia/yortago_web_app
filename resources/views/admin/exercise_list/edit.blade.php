@@ -302,11 +302,13 @@
              <div class="exercise-card">
                 <div class="card-header-custom alternative">
                     <h4 class="mb-0">Alternative Exercise</h4>
-                    @php
+                    <!-- @php
                         $hasAlternate = $alternate_exercises->count() > 0;
                         $alternate = $hasAlternate ? $alternate_exercises->first() : null;
                     @endphp
-                    <span class="btn btn-rounded btn-secondary btn-sm">{{ $hasAlternate ? 'Added' : 'Not Added' }}</span>
+                    <span class="btn btn-rounded btn-secondary btn-sm">{{ $hasAlternate ? 'Added' : 'Not Added' }}</span> -->
+                    <a href="{{ route('admin.new.exercise.unified_exercise_management', ['active_tab' => 'exercise-list']) }}" class="btn btn-rounded btn-secondary btn-sm"
+                        style="float: right">Back</a>
                 </div>
 
                 @if(!$hasAlternate)

@@ -1,7 +1,9 @@
 <style>
 .footer{
-    left: 0; bottom: -3px; width: 100%; text-align: center; margin-top:5%;font-size: 14px;
-    
+    left: 0; bottom: 0px; width: 100%; text-align: center;
+    font-size: 14px; 
+    /* padding: 10px !important; */
+    background-color: #ffffff !important;
 }
 .footer .copyright{
     padding: 2px !important;
@@ -15,7 +17,7 @@
 }
 
 </style>
-<div class="footer">
+<div class="footer py-2">
     <div class="copyright">
         <p>Copyright © Designed &amp; Developed by <a href="https://deviotech.com/" target="_blank">Devio Tech</a> {{ date('Y') }}</p>
     </div>

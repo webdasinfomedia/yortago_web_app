@@ -227,7 +227,7 @@
 
                     <div class="form-group mb-3" id="weightValueDiv" style="display: {{$exercise_list->weight == 'Yes' ? 'block' : 'none'}};">
                         <label class="form-label">Weight (kg)</label>
-                        <input type="text" class="form-control" name="weight_value" id="weightValue" value="{{$exercise_list->weight_value}}" placeholder="Enter Weight value" >
+                        <input type="text" class="form-control" name="weight_value" id="weightValue" value="{{$exercise_list->weight_value}}" placeholder="Enter Weight value" readonly>
                     </div>
 
                     <div class="form-group mb-3">
@@ -257,7 +257,8 @@
                 <div class="card-header-custom alternative">
                     <h4 class="mb-0">Alternative Exercise</h4>
                     
-                    <span class="btn btn-rounded btn-secondary btn-sm">{{ $hasAlternate ? 'Added' : 'Not Added' }}</span>
+                   <a href="{{ route('admin.new.exercise.unified_exercise_management', ['active_tab' => 'exercise-list']) }}" class="btn btn-rounded btn-secondary btn-sm"
+                           style="float: right">Back</a>
                 </div>
 
                 <form method="post" action="{{ $hasAlternate ? route('admin.new.exercise.update_alternate_exercise') : route('admin.new.exercise.save_alternate_exercise') }}" enctype="multipart/form-data" id="alternateExerciseForm">
