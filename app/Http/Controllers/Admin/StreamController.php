@@ -397,6 +397,7 @@ public function showUserLogs($userId)
                 'exerciseItem.exercise_list', // Load exercise item and its exercise list
                 'replacedExerciseItem.exercise_list', // Load replaced exercise item
                 'newUserExercise.newExercise', // Load user exercise program and exercise
+                'alternateExercise',
                 'bodyPart'
             ])
             ->orderBy('created_at', 'desc')

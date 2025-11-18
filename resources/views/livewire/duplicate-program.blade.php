@@ -224,7 +224,7 @@
                 color: #721c24 !important;
             }
              .select2-container--default .select2-selection--single .select2-selection__rendered{
-                color:#6e6e6e !important;
+                color:#333333 !important;
                 line-height: 30px !important;
                 font-size: 14px !important;
             }
@@ -237,7 +237,7 @@
                 font-size: 14px !important;
             }
             .select2-container--default .select2-search--dropdown .select2-search__field {
-                color: #6e6e6e;
+                color: #333333;
                 border: 1px solid #aaa;
                 font-size: 14px;
             }
@@ -245,7 +245,7 @@
                 font-size: 14px;
             }
             .text-muted{
-                color:#6e6e6e !important;
+                color:#333333 !important;
             }
             .copy-modal .form-group{
                 font-size: 14px;
@@ -254,7 +254,7 @@
                 font-size: 16px;
             }
             .modal-title{
-                color: #7e7e7e !important;
+                color: #333333 !important;
             }
             .form-check-inline{
                 font-size:16px;

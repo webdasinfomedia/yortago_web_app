@@ -200,14 +200,14 @@
                     border-radius: 0;
                     background: #fff;
                     border: 1px solid #f0f1f5;
-                    color: #7e7e7e;
+                    color: #333333;
                     font-size: 14px;
                     font-family: 'poppins', sans-serif;
 
                     /* height: 56px; */
             }
             .select2-container--default .select2-selection--single .select2-selection__rendered{
-                color:#6e6e6e !important;
+                color:#333333 !important;
                 line-height: 30px !important;
                 font-size: 14px !important;
             }
@@ -272,11 +272,11 @@
 
             }
             .text-muted{
-                color:#6e6e6e !important;
+                color:#333333 !important;
             }
             .modal-title{
                 font-size: 18px;
-                color:#7e7e7e !important;
+                color:#333333 !important;
             }
             .btn:hover {
                 color: white;
@@ -286,7 +286,7 @@
                 font-size: 14px !important;
             }
             .select2-container--default .select2-search--dropdown .select2-search__field {
-                color: #6e6e6e;
+                color: #333333;
                 border: 1px solid #aaa;
                 font-size: 14px;
             }
