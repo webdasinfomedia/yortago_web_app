@@ -384,7 +384,7 @@ class DuplicateProgram extends Component
         $this->validate([
             'title' => 'required|string|max:255|unique:new_exercises,title',
             'category_id' => 'required|integer|exists:categories,id',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'youtube_link' => 'nullable|string|max:255',
             'program_type' => 'required|in:generic,premium',
         ]);
@@ -395,9 +395,8 @@ class DuplicateProgram extends Component
 
     $imageURL = null;
     if ($this->image) {
-        $filename = time() . '.' . $this->image->getClientOriginalExtension();
-        $this->image->storeAs('uploads/exercise', $filename, 'public');
-        $imageURL = 'uploads/exercise/' . $filename;
+        // Use the ImageUploadTrait method
+        $imageURL = $this->upload_livewire_file($this->image);
     }
 
     // Create new program
@@ -839,7 +838,7 @@ class DuplicateProgram extends Component
         $this->validate([
             'title' => 'required|string|max:255|unique:new_exercises,title',
             'category_id' => 'required|integer|exists:categories,id',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'program_type' => 'required|in:generic,premium',
         ]);
     } catch (\Illuminate\Validation\ValidationException $e) {
@@ -853,9 +852,8 @@ class DuplicateProgram extends Component
 
     $imageURL = null;
     if ($this->image) {
-        $filename = time() . '.' . $this->image->getClientOriginalExtension();
-        $this->image->storeAs('uploads/exercise', $filename, 'public');
-        $imageURL = 'uploads/exercise/' . $filename;
+        // Use the ImageUploadTrait method
+        $imageURL = $this->upload_livewire_file($this->image);
     }
 
     $newProgram = NewExercise::create([
@@ -886,24 +884,22 @@ class DuplicateProgram extends Component
     public function updatedImage()
     {
         $this->validate([
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         if ($this->image) {
             try {
-                $extension = $this->image->getClientOriginalExtension();
-                $name = time() . '_' . uniqid() . '.' . $extension;
-                $this->imagePath = $this->image->storeAs('uploads/exercise', $name, 'public');
+                // Just validate - don't store yet
+                // The actual upload will happen in copyProgram() or copyToNewProgram()
                 $this->imageUploaded = true;
-
-                // Clear image validation errors on successful upload
+                
+                // Clear image validation errors on successful validation
                 $this->resetErrorBag('image');
 
                 // Dispatch success event
-                $this->dispatch('show-success', message: 'Image uploaded successfully!');
+               // $this->dispatch('show-success', message: 'Image validated successfully!');
             } catch (\Exception $e) {
-                $this->dispatch('show-error', message: 'Image upload failed: ' . $e->getMessage());
-                $this->imagePath = null;
+                $this->dispatch('show-error', message: 'Image validation failed: ' . $e->getMessage());
                 $this->imageUploaded = false;
             }
         }
