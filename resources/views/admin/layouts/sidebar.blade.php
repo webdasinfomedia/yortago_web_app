@@ -143,7 +143,8 @@
                     <span class="nav-text">Live Stream</span>
                 </a>
             </li>
-            <li><a class="ai-icon" href="{{ route('admin.new.exercise.manage') }}" aria-expanded="false">
+            <li class="{{ request()->routeIs('admin.new.exercise.manage')  || request()->routeIs('admin.new.exercise.assign_exercise') || request()->routeIs('admin.new.exercise.create.program') || request()->routeIs('admin.new.exercise.create_exercise') || request()->routeIs('admin.new.exercise.edit_exercise') || request()->routeIs('admin.new.exercise.duplicate.program') ? 'mm-active' : '' }}">
+                <a class="ai-icon" href="{{ route('admin.new.exercise.manage') }}" aria-expanded="false">
                     <i class="la la-dumbbell"></i>
                     <span class="nav-text">Program Management</span>
                 </a>
@@ -154,7 +155,8 @@
                 </a>
             </li>
             <!-- new module - excersice management -->
-            <li><a class="ai-icon" href="{{ route('admin.new.exercise.unified_exercise_management') }}" aria-expanded="false">
+            <li class="{{ request()->routeIs('admin.new.exercise.unified_exercise_management')  || request()->routeIs('admin.new.exercise.create_exercise_list') || request()->routeIs('admin.new.exercise.edit_exercise_list') || request()->routeIs('admin.new.exercise.view_exercise_list') ? 'mm-active' : '' }}">
+                <a class="ai-icon " href="{{ route('admin.new.exercise.unified_exercise_management') }}" aria-expanded="false">
                     <i class="la la-running"></i>
                     <span class="nav-text">Exercise Management</span>
                 </a>
@@ -212,7 +214,8 @@
                 </a>
 
             </li>
-            <li><a class="ai-icon" href="{{ route('admin.live-stream.users.list') }}" aria-expanded="false">
+            <li class="{{ request()->routeIs('admin.live-stream.users.list')  || request()->routeIs('admin.users.logs.show') || request()->routeIs('admin.monitoring') || request()->routeIs('admin.form_check') || request()->is('admin/user_evaluation*') ? 'mm-active' : '' }}">
+                <a class="ai-icon" href="{{ route('admin.live-stream.users.list') }}" aria-expanded="false">
                     <i class="la la-users"></i>
                     <span class="nav-text"> Users</span>
                 </a>
@@ -236,7 +239,6 @@
                 </a>
 
             </li>
-
             <!-- <li><a class="ai-icon" href="{{ route('admin.metrics.list') }}" aria-expanded="false">
                     <i class="la la-user"></i>
                     <span class="nav-text">Metrics</span>

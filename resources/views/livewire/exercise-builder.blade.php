@@ -240,9 +240,33 @@
             }
 
             /* Alternative approach - reserve fixed space */
-            .exercise-errors-container {
+            .exercise-errors-container, .alternate-errors-container{
                 min-height: 20px; /* Reserve space for error messages */
             }
+
+            .alternate-alert {
+                color: red;
+                background-color: white;
+                border: none;
+                display: none;
+                margin-bottom: 5px;
+            }
+
+            .alternate-alert.has-errors {
+                display: block;
+            }
+
+            .alternate-error-list {
+                list-style-type: disc;
+                padding-left: 20px;
+                margin: 0;
+            }
+
+            .alternate-error-list li {
+                font-size: 14px;
+                color: #dc3545;
+            }
+
             .text-muted , .text-info{
                 font-size: 14px;
 
@@ -266,7 +290,7 @@
                 border: 1px solid #aaa;
                 font-size: 14px;
             }
-            .btn-primary:hover{
+            .btn-primary:hover, .btn-primary:focus, .btn-primary.focus{
                 color: white !important;
             }
            
@@ -630,19 +654,102 @@
         }
     }
 
+    function validateAlternateField(input) {
+        const value = input.value.trim();
+        let error = "";
+
+        if (value === "") {
+            error = `${capitalize(input.name.replace('alt_', '').replace(/_\d+$/, ''))} is required.`;
+        } else if (isNaN(value) || parseInt(value) <= 0) {
+            error = `${capitalize(input.name.replace('alt_', '').replace(/_\d+$/, ''))} must be a number greater than 0.`;
+        } else if (parseInt(value) > 999) {
+            error = `${capitalize(input.name.replace('alt_', '').replace(/_\d+$/, ''))} cannot exceed 3 digits value.`;
+        }
+
+        // Find the alternate card (not exercise-card)
+        const alternateCard = input.closest(".card.border-primary");
+        if (!alternateCard) return;
+
+        const errorList = alternateCard.querySelector(".alternate-error-list");
+        const errorContainer = errorList ? errorList.parentElement : null;
+
+        if (!errorContainer) return;
+
+        if (error) {
+            input.classList.add("is-invalid");
+            input.value = "";
+
+            let li = errorList.querySelector(`li[data-field="${input.name}"]`);
+            if (!li) {
+                li = document.createElement("li");
+                li.setAttribute("data-field", input.name);
+                errorList.appendChild(li);
+            }
+            li.textContent = error;
+
+            errorContainer.classList.add('has-errors');
+            errorContainer.style.display = "block";
+
+            if (input.dataset.timeoutId) {
+                clearTimeout(parseInt(input.dataset.timeoutId));
+            }
+
+            const timeoutId = setTimeout(() => {
+                input.classList.remove("is-invalid");
+                let li = errorList.querySelector(`li[data-field="${input.name}"]`);
+                if (li) li.remove();
+
+                if (errorList.children.length === 0) {
+                    errorContainer.classList.remove('has-errors');
+                    errorContainer.style.display = 'none';
+                }
+                
+                delete input.dataset.timeoutId;
+            }, 10000);
+
+            input.dataset.timeoutId = timeoutId;
+        } else {
+            input.classList.remove("is-invalid");
+
+            if (input.dataset.timeoutId) {
+                clearTimeout(parseInt(input.dataset.timeoutId));
+                delete input.dataset.timeoutId;
+            }
+
+            let li = errorList.querySelector(`li[data-field="${input.name}"]`);
+            if (li) li.remove();
+
+            if (errorList.children.length === 0) {
+                errorContainer.classList.remove('has-errors');
+                errorContainer.style.display = 'none';
+            }
+        }
+    }
+
     function capitalize(str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
     function attachValidation() {
+        // Main exercise fields
         const fields = document.querySelectorAll(".exercise-field");
-        
         fields.forEach(field => {
             if (!field.dataset.validationAttached) {
                 field.addEventListener("blur", function () {
                     validateField(this);
                 });
                 field.dataset.validationAttached = "true";
+            }
+        });
+
+        // Alternate exercise fields
+        const alternateFields = document.querySelectorAll(".alternate-field");
+        alternateFields.forEach(field => {
+            if (!field.dataset.alternateValidationAttached) {
+                field.addEventListener("blur", function () {
+                    validateAlternateField(this);
+                });
+                field.dataset.alternateValidationAttached = "true";
             }
         });
     }
@@ -1026,125 +1133,138 @@
                             </div>
                         @endif
                             <!-- Alternate Exercises Section -->
-                        
-                       @if(isset($exercise['alternates']) && count($exercise['alternates']) > 0 )
-                        <div class="mt-2 pt-2 border-top">
-                            <h6 class="text-primary mb-3">
-                                <i class="fa fa-exchange-alt"></i> Alternate Exercises
-                            </h6>
+                            @if(isset($exercise['alternates']) && count($exercise['alternates']) > 0)
+                            <div class="mt-2 pt-2 border-top">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fa fa-exchange-alt"></i> Alternate Exercises
+                                </h6>
 
-                            @foreach($exercise['alternates'] as $altIndex => $alternate)
-                                <div class="card mb-1 border-primary" wire:key="alternate-{{ $exercise['id'] }}-{{ $alternate['id'] }}">
-                                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
-                                        <strong> {{ $alternate['name'] }}</strong>
-                                        <button type="button"
+                                @foreach($exercise['alternates'] as $altIndex => $alternate)
+                                    <div class="card mb-1 border-primary" wire:key="alternate-{{ $exercise['id'] }}-{{ $alternate['id'] }}">
+                                        <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                                            <strong> {{ $alternate['name'] }}</strong>
+                                            <button type="button"
                                                     wire:click.stop="deleteAlternateExercise({{ $alternate['id'] }})"
                                                     wire:confirm="Are you sure you want to remove this alternate exercise?"
                                                     class="btn btn-danger-custom btn-action"
                                                     title="Remove Alternate">
                                                 <i class="fa fa-trash"></i> 
                                             </button>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-3 mb-1">
+                                                    <label class="form-label">Name</label>
+                                                    <input type="text" 
+                                                        name="alt_name_{{ $alternate['id'] }}"
+                                                        class="form-control form-control-sm p-0 text-center"
+                                                        wire:model.defer="alternates.{{ $alternate['id'] }}.name" 
+                                                        value="{{ $alternate['name'] }}" 
+                                                        readonly>
+                                                </div>
+                                                
+                                                <!-- Sets - REMOVED exercise-field class -->
+                                                <div class="col-md-2 mb-1">
+                                                    <label class="form-label">Sets</label>
+                                                    <input type="text" 
+                                                        name="alt_sets_{{ $alternate['id'] }}"
+                                                        class="form-control form-control-sm p-0 text-center alternate-field"
+                                                        wire:model.defer="alternates.{{ $alternate['id'] }}.sets">
+                                                </div>
+
+                                                <!-- Reps - REMOVED exercise-field class -->
+                                                <div class="col-md-2 mb-1">
+                                                    <label class="form-label">Reps</label>
+                                                    <input type="text" 
+                                                        name="alt_reps_{{ $alternate['id'] }}"
+                                                        class="form-control form-control-sm p-0 text-center alternate-field"
+                                                        wire:model.defer="alternates.{{ $alternate['id'] }}.reps">
+                                                </div>
+
+                                                <!-- Rest - REMOVED exercise-field class -->
+                                                <div class="col-md-2 mb-1">
+                                                    <label class="form-label">Rest</label>
+                                                    <input type="text" 
+                                                        name="alt_rest_{{ $alternate['id'] }}"
+                                                        class="form-control form-control-sm p-0 text-center alternate-field"
+                                                        wire:model.defer="alternates.{{ $alternate['id'] }}.rest">
+                                                </div>
+
+                                                <!-- Tempo -->
+                                                <div class="col-md-2 mb-1">
+                                                    <label class="form-label">Tempo</label>
+                                                    <input type="text" 
+                                                        class="form-control form-control-sm p-0 text-center"
+                                                        wire:model.defer="alternates.{{ $alternate['id'] }}.tempo">
+                                                </div>
+
+                                                <!-- Intensity -->
+                                                <div class="col-md-2 mb-1">
+                                                    <label class="form-label">Intensity</label>
+                                                    <select class="form-control form-control-sm"
+                                                            wire:model.defer="alternates.{{ $alternate['id'] }}.intensity">
+                                                        <option value="">-- Select --</option>
+                                                        <option value="Low">Low</option>
+                                                        <option value="Moderate">Moderate</option>
+                                                        <option value="High">High</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Weight -->
+                                                <div class="col-md-2 mb-1">
+                                                    <label class="form-label">Weight</label>
+                                                    <select class="form-control form-control-sm" 
+                                                            wire:model.defer="alternates.{{ $alternate['id'] }}.weight">
+                                                        <option value="">-Select-</option>
+                                                        <option value="Yes">Yes</option>
+                                                        <option value="No">No</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Weight Value -->
+                                                @if($alternate['weight'] === 'Yes')
+                                                <div class="col-md-2 mb-1">
+                                                    <label class="form-label">Weight(kg)</label>
+                                                    <input type="text" 
+                                                        class="form-control form-control-sm p-0 text-center"
+                                                        wire:model.defer="alternates.{{ $alternate['id'] }}.weight_value" 
+                                                        value="{{ $alternate['weight_value'] }}">
+                                                </div>
+                                                @endif
+                                            </div>
+
+                                            <!-- Error container for alternate exercise -->
+                                            <div class="row">
+                                                <div class="col-12 alternate-errors-container">
+                                                    <div class="alert alert-danger py-1 px-3 alternate-alert" 
+                                                        id="alternate-errors-{{ $alternate['id'] }}" 
+                                                        style="display: none;">
+                                                        <ul class="mb-0 alternate-error-list"></ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <!-- Notes - FIXED to strip HTML tags -->
+                                                <div class="col-12 mb-1">
+                                                    <label class="form-label">Instructions/Notes</label>
+                                                    <textarea class="form-control" 
+                                                            rows="2"
+                                                            wire:model.defer="alternates.{{ $alternate['id'] }}.notes">{{ strip_tags(html_entity_decode($alternate['notes'] ?? '')) }}</textarea>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mt-1 justify-content-end">
+                                                <button wire:click="saveAlternate({{ $alternate['id'] }})" 
+                                                        class="btn btn-primary btn-sm mr-3">
+                                                    Save Alternate
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                             <div class="col-md-3 mb-1">
-                                                <label class="form-label">Name</label>
-                                                <input type="text" 
-                                                    name="alt_name_{{ $alternate['id'] }}"
-                                                    class="form-control form-control-sm p-0 text-center"
-                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.name" value="{{ $alternate['name'] }}" readonly>
-                                            </div>
-                                            <!-- Sets -->
-                                            <div class="col-md-2 mb-1">
-                                                <label class="form-label">Sets</label>
-                                                <input type="text" 
-                                                    name="alt_sets_{{ $alternate['id'] }}"
-                                                    class="form-control form-control-sm p-0 text-center exercise-field"
-                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.sets">
-                                            </div>
-
-                                            <!-- Reps -->
-                                            <div class="col-md-2 mb-1">
-                                                <label class="form-label">Reps</label>
-                                                <input type="text" 
-                                                    name="alt_reps_{{ $alternate['id'] }}"
-                                                    class="form-control form-control-sm p-0 text-center exercise-field"
-                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.reps">
-                                            </div>
-
-                                            <!-- Rest -->
-                                            <div class="col-md-2 mb-1">
-                                                <label class="form-label">Rest</label>
-                                                <input type="text" 
-                                                    name="alt_rest_{{ $alternate['id'] }}"
-                                                    class="form-control form-control-sm p-0 text-center exercise-field"
-                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.rest">
-                                            </div>
-
-                                            <!-- Tempo -->
-                                            <div class="col-md-2 mb-1">
-                                                <label class="form-label">Tempo</label>
-                                                <input type="text" 
-                                                    class="form-control form-control-sm p-0 text-center"
-                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.tempo">
-                                            </div>
-
-                                            <!-- Intensity -->
-                                            <div class="col-md-2 mb-1">
-                                                <label class="form-label">Intensity</label>
-                                                <select class="form-control form-control-sm"
-                                                        wire:model.defer="alternates.{{ $alternate['id'] }}.intensity">
-                                                    <option value="">-- Select --</option>
-                                                    <option value="Low">Low</option>
-                                                    <option value="Moderate">Moderate</option>
-                                                    <option value="High">High</option>
-                                                </select>
-                                            </div>
-
-                                            <!-- Weight -->
-                                            <div class="col-md-2 mb-1">
-                                                <label class="form-label">Weight</label>
-                                                <select class="form-control form-control-sm" 
-                                                        wire:model.defer="alternates.{{ $alternate['id'] }}.weight">
-                                                    <option value="">-Select-</option>
-                                                    <option value="Yes">Yes</option>
-                                                    <option value="No">No</option>
-                                                </select>
-                                            </div>
-
-                                            <!-- Weight Value -->
-                                            @if($alternate['weight'] === 'Yes')
-                                            <div class="col-md-2 mb-1">
-                                                <label class="form-label">Weight(kg)</label>
-                                                <input type="text" 
-                                                    class="form-control form-control-sm p-0 text-center"
-                                                    wire:model.defer="alternates.{{ $alternate['id'] }}.weight_value" value="{{ $alternate['weight_value'] }}" >
-                                            </div>
-                                            @endif
-                                        </div>
-
-                                        <div class="row">
-                                            <!-- Notes -->
-                                            <div class="col-12 mb-1">
-                                                <label class="form-label">Instructions/Notes</label>
-                                                <textarea class="form-control" 
-                                                        rows="2"
-                                                        wire:model.defer="alternates.{{ $alternate['id'] }}.notes">{{ html_entity_decode(strip_tags($alternate['notes'] ?? '')) }}</textarea>
-                                            </div>
-                                        </div>
-                                        
-
-                                        <div class="row mt-1 justify-content-end">
-                                            <button wire:click="saveAlternate({{ $alternate['id'] }})" class="btn btn-primary btn-sm mr-3">
-                                                Save Alternate
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
+                                @endforeach
+                            </div>
+                            @endif
                         </div>
 
                         

@@ -91,7 +91,7 @@ private function populateAlternates()
                         'intensity' => $alt['intensity'] ?? null, // From pivot
                         'weight' => $alt['weight'] ?? 'No', // From pivot
                         'weight_value' => $alt['weight_value'] ?? null, // From pivot
-                        'notes' => $alt['notes'] ?? null, // From pivot
+                        'notes' => strip_tags(html_entity_decode($alt['notes'] ?? null)),
                     ];
                 }
             }
@@ -221,7 +221,7 @@ private function loadWeeks()
                                     'intensity' => $alt->pivot->intensity,
                                     'weight' => $alt->pivot->weight ?? $alt->weight ?? 'No',
                                     'weight_value' => $alt->pivot->weight_value ?? $alt->weight_value,
-                                    'notes' => $alt->pivot->notes ?? $alt->notes,
+                                    'notes' => strip_tags(html_entity_decode($alt->pivot->notes ?? $alt->notes ?? '')), 
                                     'image' => $alt->image,
                                 ];
                             })
@@ -249,7 +249,7 @@ private function loadWeeks()
                             'intensity' => $ex->intensity,
                             'weight' => $ex->weight ?? 'No',
                             'weight_value' => $ex->weight_value,
-                            'notes' => $ex->notes,
+                            'notes' => strip_tags(html_entity_decode($ex->notes ?? '')),
                             'alternates' => $linkedAlternates,
                             'has_available_alternates' => $hasAvailableAlternates,
                         ];

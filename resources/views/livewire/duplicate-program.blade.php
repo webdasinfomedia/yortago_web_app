@@ -266,7 +266,7 @@
                 font-size: 14px !important;
                 font-weight: 400 !important;
             }
-             .btn-primary:hover{
+            .btn-primary:hover, .btn-primary:focus, .btn-primary.focus{
                 color: white !important;
             }
         </style>
