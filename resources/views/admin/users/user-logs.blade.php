@@ -33,6 +33,10 @@
 .modal-title, .modal-footer{
     font-size: 16px;
 }
+table.dataTable thead th, table.dataTable thead td {
+    padding: 10px 10px !important;
+    border-bottom: 1px solid #111;
+}
 
 </style>
 @section('content')
@@ -62,12 +66,12 @@
                         <table id="logsTable" class="display min-w850">
                             <thead>
                                 <tr>
-                                    <th>Sr No</th>
+                                    <th>#</th>
                                     <th>Log Date</th>
-                                    <th>Exercise Name</th>
+                                    <th>Program Name</th>
                                     <th>Exercise Item</th>
-                                    <th>Alternate</th>
-                                    <th>Replaced Item</th>
+                                    <!-- <th>Alternate</th> -->
+                                    <!-- <th>Replaced Item</th> -->
                                     <th>Body Part</th>
                                     <th>Sets</th>
                                     <th>Reps</th>
@@ -86,16 +90,26 @@
                                     <td>{{ \Carbon\Carbon::parse($log->created_at)->format('d M Y, h:i A') }}</td>
                                     <td>{{ $log->newUserExercise->newExercise->title ?? 'N/A' }}</td>
                                         {{-- Exercise Item: from ExerciseList --}}
-                                    <td>{{ $log->exerciseItem->exercise_list->name ?? 'N/A' }}</td>
                                     <td>
+                                        @if($log->alternate == 1 && $log->alternateExercise)
+                                            {{ $log->alternateExercise->name ?? 'N/A' }}
+                                            <i class="fa fa-exchange text-secondary ml-2"
+                                            title="Alternate Exercise"
+                                            style="font-size:14px; color:#B9732F !important"></i>
+                                        @else
+                                            {{ $log->exerciseItem->exercise_list->name ?? 'N/A' }}
+                                        @endif
+                                    </td>
+
+                                    <!-- <td>
                                         @if($log->alternate == 1)
                                              Yes 
                                         @else
                                             No
                                         @endif
-                                    </td>
+                                    </td> -->
                                     {{-- Replaced Item: from ExerciseList --}}
-                                    <td>{{ $log->replacedExerciseItem->exercise_list->name ?? '-' }}</td>
+                                    <!-- <td>{{ $log->replacedExerciseItem->exercise_list->name ?? '-' }}</td> -->
                                     <td><span>{{ $log->bodyPart->name ?? 'N/A' }}</span></td>
                                     <td>
                                         @if($log->sets)
@@ -222,6 +236,7 @@ $(document).ready(function() {
     });
     
 });
+
 // function showNotesPopup(notes, exercise) {
 //         // Set modal content
 //        // document.getElementById('modalExerciseName').textContent = exercise;
