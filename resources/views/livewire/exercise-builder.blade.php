@@ -364,26 +364,76 @@
     let eventListenersAttached = false;
 
     function initializeSelect2() {
+        // Check if jQuery and Select2 are loaded
+        if (typeof $ === 'undefined') {
+            console.error('jQuery is not loaded');
+            return;
+        }
+        
+        if (typeof $.fn.select2 === 'undefined') {
+            console.error('Select2 is not loaded');
+            return;
+        }
+
         // Destroy existing Select2 instances first
         $('.searchable-select').each(function() {
             if ($(this).data('select2')) {
-                $(this).select2('destroy');
+                try {
+                    $(this).select2('destroy');
+                } catch (e) {
+                    console.warn('Error destroying Select2:', e);
+                }
             }
         });
 
-        // Reinitialize all Select2 dropdowns
-        $('.searchable-select').select2({
-            placeholder: "-Select Exercise-",
-            allowClear: true,
-            width: '100%',
-            dropdownAutoWidth: true
-        });
+        // Remove any existing change event listeners to prevent duplicates
+        $('.searchable-select').off('change.select2Custom');
 
-        // Handle Livewire updates for Select2
-        $('.searchable-select').on('change', function() {
+        // Reinitialize all Select2 dropdowns
+        try {
+            $('.searchable-select').select2({
+                placeholder: "-Select Exercise-",
+                allowClear: true,
+                width: '100%',
+                dropdownAutoWidth: true
+            });
+        } catch (e) {
+            console.error('Error initializing Select2:', e);
+            return;
+        }
+
+        // Handle Livewire updates for Select2 - Use namespaced event
+        $('.searchable-select').on('change.select2Custom', function(e) {
+            // Prevent the event from bubbling
+            e.stopPropagation();
+            
             const value = $(this).val();
-            const exerciseId = $(this).closest('.exercise-card').find('[id^="exerciseBody"]').attr('id').replace('exerciseBody', '');
-            @this.call('updateExercise', exerciseId, 'exercise_list_id', value);
+            const $exerciseCard = $(this).closest('.exercise-card');
+            
+            // Safety check - ensure exercise card exists
+            if ($exerciseCard.length === 0) {
+                console.error('Exercise card not found');
+                return;
+            }
+            
+            const $exerciseBody = $exerciseCard.find('[id^="exerciseBody"]');
+            
+            // Safety check - ensure exercise body exists
+            if ($exerciseBody.length === 0) {
+                console.error('Exercise body not found');
+                return;
+            }
+            
+            const exerciseId = $exerciseBody.attr('id').replace('exerciseBody', '');
+            
+            // Call Livewire method safely
+            try {
+                if (typeof Livewire !== 'undefined' && window.Livewire) {
+                    @this.call('updateExercise', exerciseId, 'exercise_list_id', value);
+                }
+            } catch (error) {
+                console.error('Error calling Livewire method:', error);
+            }
         });
     }
 
@@ -451,10 +501,19 @@
             eventListenersAttached = true;
         }
 
-        // Initialize Select2
-        if (typeof $.fn.select2 !== 'undefined') {
-            initializeSelect2();
-        }
+        // Initialize Select2 with delay to ensure DOM is ready
+        setTimeout(() => {
+            if (typeof $.fn.select2 !== 'undefined') {
+                initializeSelect2();
+            } else {
+                console.warn('Select2 not available, retrying...');
+                setTimeout(() => {
+                    if (typeof $.fn.select2 !== 'undefined') {
+                        initializeSelect2();
+                    }
+                }, 500);
+            }
+        }, 100);
         
         // Initialize accordion state from backend
         initAccordionState();
@@ -586,7 +645,7 @@
         }, 50);
     });
 
-    // Global validation function
+    // Global validation function for main exercises
     function validateField(input) {
         const value = input.value.trim();
         let error = "";
@@ -654,6 +713,7 @@
         }
     }
 
+    // Validation function for alternate exercises
     function validateAlternateField(input) {
         const value = input.value.trim();
         let error = "";
@@ -901,7 +961,7 @@
                                         wire:click.stop="addDay({{ $week['id'] }})" 
                                         class="btn btn-success-custom btn-action add-day-btn"
                                         title="Add Day">
-                                    Add Day
+                                    <i class="fa fa-plus"></i>
                                 </button>
                                 @endif
                                 @if(count($weeks) > 1)

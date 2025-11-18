@@ -113,6 +113,12 @@
 .table-responsive tbody tr td, .text-muted{
     color: #333333 !important;
 }
+input[type="radio"]:checked {
+    accent-color: #B9732F;
+}
+.btn-primary:hover, .btn-primary:focus, .btn-primary.focus{
+                color: white !important;
+}
 /* @media only screen and (min-width: 767px) and (max-width: 1300px) {
    .hamburger {
     display: inline-block !important;
