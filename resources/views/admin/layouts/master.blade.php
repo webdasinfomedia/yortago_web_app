@@ -28,11 +28,7 @@
     background-color: #d6d3d0!important;
     border-color: #d6d3d0!important;
 }
-.footer{
-    position: absolute;
-    bottom: 0px;
-    width: 100%;
-}
+
 .select2-container--default .select2-selection--single .select2-selection__rendered{
     color:#6e6e6e !important;
     line-height: 51px !important;
@@ -119,20 +115,10 @@ input[type="radio"]:checked {
 .btn-primary:hover, .btn-primary:focus, .btn-primary.focus{
                 color: white !important;
 }
-/* @media only screen and (min-width: 767px) and (max-width: 1300px) {
-   .hamburger {
-    display: inline-block !important;
-    left: 0px;
-    position: relative;
-    top: 3px;
-    -webkit-transition: all 0.3s 
-ease-in-out 0s;
-    transition: all 0.3s 
-ease-in-out 0s;
-    width: 26px;
-    z-index: 999;
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
 }
-} */
 </style>
  
 <body>

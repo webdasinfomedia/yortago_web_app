@@ -1,9 +1,10 @@
 <style>
 .footer{
-    left: 0; bottom: 0px; width: 100%; text-align: center;
+   width: 100%; text-align: center;
     font-size: 14px; 
     /* padding: 10px !important; */
     background-color: #ffffff !important;
+    position: relative;
 }
 .footer .copyright{
     padding: 2px !important;
@@ -19,6 +20,6 @@
 </style>
 <div class="footer py-2">
     <div class="copyright">
-        <p>Copyright © Designed &amp; Developed by <a href="https://deviotech.com/" target="_blank">Devio Tech</a> {{ date('Y') }}</p>
+        <p>Copyright © Designed &amp; Developed by <a href="https://dasinfomedia.com/" target="_blank">Dasinfomedia</a> {{ date('Y') }}</p>
     </div>
 </div>
