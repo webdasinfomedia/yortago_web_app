@@ -4,7 +4,6 @@
                .week-day-sidebar {
                 background: #ffffff;
                 border: 1px solid #dee2e6;
-                /* border-top: 1px solid #dee2e6; */
                 min-height: 80vh;
                 padding: 15px;
             }
@@ -108,12 +107,12 @@
                 border-color: #d76e33;
                 color: white;
             }
+            
             .main-div{
                 background-color: #FDF9F6 !important;
                 border: 1px solid #D2D2d2 !important;
                 border-radius: 10px !important;
                 padding: 15px 12px 15px 25px !important;
-                
             }
 
             .btn-success-custom {
@@ -132,9 +131,11 @@
                 font-size: 0.675rem;
                 height: 30px;
             }
+            
             .form-control{
                 font-size: 14px !important;
             }
+            
             .form-label {
                 font-size: 14px;
             }
@@ -152,6 +153,7 @@
                 border:1px solid #dee2e6; 
                 background: #ffffff;
             }
+            
             .programname{
                 font-weight: 600;
                 font-size: 20px;
@@ -162,12 +164,12 @@
                 display: flex;
                 gap: 5px;
             }
+            
             .add-day-btn{
                 font-size: 14px;
                 cursor: pointer !important;
             }
             
-            /* Custom accordion styles */
             .accordion-arrow {
                 transition: transform 0.2s ease;
                 margin-right: 8px;
@@ -176,55 +178,106 @@
             .accordion-arrow.rotated {
                 transform: rotate(90deg);
             }
+            
             .left-sidebar-title{
                 font-size: 18px;
                 font-weight: 600;
             }
 
-            /* Prevent text selection on accordion headers */
             .week-header, .exercise-header {
                 user-select: none;
                 -webkit-user-select: none;
                 -moz-user-select: none;
                 -ms-user-select: none;
             }
+            
             .exercise-errors, .exercise-alert{
                 color: red;
                 background-color: white;
                 border: none;
             }
-            .select2-dropdown--below , .select2-dropdown--above{
-             width: 470px !important;
+            
+            .exercise-card {
+                position: relative;
+                overflow: visible !important; /* Allow dropdown to show */
             }
-            .select2-container .select2-selection--single{
-                    border-radius: 0;
-                    background: #fff;
-                    border: 1px solid #f0f1f5;
-                    color: #333333;
-                    font-size: 14px;
-                    font-family: 'poppins', sans-serif;
 
-                    /* height: 56px; */
+            .exercise-card .card-body {
+                position: relative;
+                overflow: visible !important;
             }
+
+            .select2-container {
+                z-index: 999 !important;
+            }
+
+            .select2-dropdown {
+                z-index: 1000 !important;
+                border: 1px solid #dee2e6 !important;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+            }
+
+            /* Ensure dropdown stays within exercise card bounds */
+            .select2-container--open .select2-dropdown--below {
+                border-top: 1px solid #dee2e6 !important;
+                max-height: 300px;
+            }
+
+            .select2-results__options {
+                max-height: 250px !important;
+                overflow-y: auto !important;
+            }
+
+            /* Fix for dropdown width */
+            .select2-dropdown--below, .select2-dropdown--above {
+                width: auto !important;
+                min-width: 100% !important;
+            }
+
+            .select2-container--default .select2-selection--single .select2-selection__rendered {
+                color: #333333 !important;
+            }
+            
+            .select2-container .select2-selection--single{
+                border-radius: 0;
+                background: #fff;
+                border: 1px solid #f0f1f5;
+                color: #333333;
+                font-size: 14px;
+                font-family: 'poppins', sans-serif;
+            }
+            
             .select2-container--default .select2-selection--single .select2-selection__rendered{
                 color:#333333 !important;
                 line-height: 30px !important;
                 font-size: 14px !important;
             }
+            .select2-container--open .select2-dropdown--below {
+                border-top: none;
+                border-top-left-radius: 0;
+                border-top-right-radius: 0;
+            }
+            .select2-container--default.select2-container--open.select2-container--above .select2-selection--single {
+                border-top-left-radius: 0.25rem;
+                border-top-right-radius: 0.25rem;
+            }
+            
             .select2-container--default .select2-selection--single .select2-selection__clear{
                 height: 30px !important;
                 font-size: 14px !important;
             }
+            
             .select2-container--default .select2-selection--single .select2-selection__arrow{
                 height: 30px !important;
                 font-size: 14px !important;
             }
+            
             .card-body {
                 flex: 1 1 auto;
                 min-height: 1px;
                 padding: 0.75rem !important;
             }
-            /* Add this to your <style> section */
+
             .exercise-errors {
                 min-height: 0;
                 transition: min-height 0.2s ease;
@@ -239,9 +292,8 @@
                 display: block;
             }
 
-            /* Alternative approach - reserve fixed space */
             .exercise-errors-container, .alternate-errors-container{
-                min-height: 20px; /* Reserve space for error messages */
+                min-height: 20px;
             }
 
             .alternate-alert {
@@ -267,31 +319,41 @@
                 color: #dc3545;
             }
 
-            .text-muted , .text-info{
+            .text-muted, .text-info{
                 font-size: 14px;
-
             }
+            
             .text-muted{
                 color:#333333 !important;
             }
+            
             .modal-title{
                 font-size: 18px;
                 color:#333333 !important;
             }
+            
             .btn:hover {
                 color: white;
                 text-decoration: underline !important;
             }
+            
             .select2-container--default .select2-results>.select2-results__options{
                 font-size: 14px !important;
             }
+            
             .select2-container--default .select2-search--dropdown .select2-search__field {
                 color: #333333;
                 border: 1px solid #aaa;
                 font-size: 14px;
             }
+            
             .btn-primary:hover, .btn-primary:focus, .btn-primary.focus{
                 color: white !important;
+            }
+            
+            .border-primary{
+                box-shadow: none !important;
+                border: none !important;
             }
            
         </style>
@@ -363,21 +425,16 @@
     let activeAccordionId = null;
     let eventListenersAttached = false;
 
+    // Select2 initialization
     function initializeSelect2() {
-        // Check if jQuery and Select2 are loaded
-        if (typeof $ === 'undefined') {
-            console.error('jQuery is not loaded');
-            return;
-        }
-        
-        if (typeof $.fn.select2 === 'undefined') {
-            console.error('Select2 is not loaded');
+        if (typeof $ === 'undefined' || typeof $.fn.select2 === 'undefined') {
+            console.warn('jQuery or Select2 not loaded');
             return;
         }
 
-        // Destroy existing Select2 instances first
+        // Destroy all existing instances first
         $('.searchable-select').each(function() {
-            if ($(this).data('select2')) {
+            if ($(this).hasClass('select2-hidden-accessible')) {
                 try {
                     $(this).select2('destroy');
                 } catch (e) {
@@ -386,47 +443,49 @@
             }
         });
 
-        // Remove any existing change event listeners to prevent duplicates
+        // Remove existing event listeners
         $('.searchable-select').off('change.select2Custom');
 
-        // Reinitialize all Select2 dropdowns
+        // Initialize Select2 with proper containment
         try {
-            $('.searchable-select').select2({
-                placeholder: "-Select Exercise-",
-                allowClear: true,
-                width: '100%',
-                dropdownAutoWidth: true
+            $('.searchable-select').each(function() {
+                const $this = $(this);
+                const $exerciseCard = $this.closest('.exercise-card');
+                
+                // Use the exercise card as dropdown parent to keep dropdown inside
+                const dropdownParent = $exerciseCard.length > 0 ? $exerciseCard : $this.parent();
+                
+                $this.select2({
+                    placeholder: "-Select Exercise-",
+                    allowClear: true,
+                    width: '100%',
+                    dropdownAutoWidth: true,
+                    dropdownParent: dropdownParent,
+                    dropdownCssClass: 'select2-dropdown-fixed',
+                    dropdownPosition: 'below', // Force dropdown below
+                    // FIXED: Add this to prevent dropdown from going outside
+                    containerCssClass: 'select2-container-fixed'
+                });
             });
         } catch (e) {
             console.error('Error initializing Select2:', e);
             return;
         }
 
-        // Handle Livewire updates for Select2 - Use namespaced event
+        // Attach change handler with namespace
         $('.searchable-select').on('change.select2Custom', function(e) {
-            // Prevent the event from bubbling
             e.stopPropagation();
             
             const value = $(this).val();
             const $exerciseCard = $(this).closest('.exercise-card');
             
-            // Safety check - ensure exercise card exists
-            if ($exerciseCard.length === 0) {
-                console.error('Exercise card not found');
-                return;
-            }
+            if ($exerciseCard.length === 0) return;
             
             const $exerciseBody = $exerciseCard.find('[id^="exerciseBody"]');
-            
-            // Safety check - ensure exercise body exists
-            if ($exerciseBody.length === 0) {
-                console.error('Exercise body not found');
-                return;
-            }
+            if ($exerciseBody.length === 0) return;
             
             const exerciseId = $exerciseBody.attr('id').replace('exerciseBody', '');
             
-            // Call Livewire method safely
             try {
                 if (typeof Livewire !== 'undefined' && window.Livewire) {
                     @this.call('updateExercise', exerciseId, 'exercise_list_id', value);
@@ -457,7 +516,12 @@
                 }
             });
 
-            // Listen for sync-week-accordion event
+            // Reinitialize Select2 after Livewire updates
+            window.addEventListener('reinit-select2', () => {
+                setTimeout(() => initializeSelect2(), 100);
+            });
+
+             // Listen for sync-week-accordion event
             window.addEventListener('sync-week-accordion', event => {
                 const weekId = event.detail.weekId;
                 
@@ -498,29 +562,53 @@
                 }
             });
 
+            window.addEventListener('update-weight-select', event => {
+                const { exerciseId, weight } = event.detail;
+                const weightSelect = document.getElementById('exerciseWeight' + exerciseId);
+                
+                if (weightSelect) {
+                    // Update the select element value
+                    weightSelect.value = weight;
+                    
+                    // Also update the weight value div visibility
+                    const weightDiv = document.getElementById('weightValueDiv' + exerciseId);
+                    if (weightDiv) {
+                        weightDiv.style.display = (weight === 'Yes') ? 'block' : 'none';
+                    }
+                }
+            });
+
+           window.addEventListener('update-alternate-weight-visibility', event => {
+                const { alternateId, weight } = event.detail;
+                //console.log('Received alternate weight visibility event:', alternateId, weight);
+                
+                const weightDiv = document.getElementById('altWeightValueDiv' + alternateId);
+                const weightSelect = document.getElementById('altWeight' + alternateId);
+                
+                if (weightDiv) {
+                    weightDiv.style.display = weight === 'Yes' ? 'block' : 'none';
+                    //console.log('Updated weight div visibility to:', weight === 'Yes' ? 'block' : 'none');
+                }
+                
+                // IMPORTANT: Also update the select value to ensure consistency
+                if (weightSelect) {
+                    weightSelect.value = weight;
+                }
+            });
+
             eventListenersAttached = true;
         }
 
-        // Initialize Select2 with delay to ensure DOM is ready
+        // Initialize Select2 with delay
         setTimeout(() => {
-            if (typeof $.fn.select2 !== 'undefined') {
-                initializeSelect2();
-            } else {
-                console.warn('Select2 not available, retrying...');
-                setTimeout(() => {
-                    if (typeof $.fn.select2 !== 'undefined') {
-                        initializeSelect2();
-                    }
-                }, 500);
-            }
-        }, 100);
+            initializeSelect2();
+        }, 150);
         
-        // Initialize accordion state from backend
+         // Initialize accordion state from backend
         initAccordionState();
         
         // Attach weight handlers
         attachWeightHandlers();
-        
         // Attach validation
         attachValidation();
     }
@@ -554,7 +642,9 @@
         if (activeAccordionId === weekId) {
             closeAccordion(weekId);
             activeAccordionId = null;
-            @this.set('activeWeekAccordion', null);
+            if (typeof Livewire !== 'undefined' && window.Livewire && typeof @this !== 'undefined') {
+                @this.set('activeWeekAccordion', null);
+            }
         } else {
             // Close all accordions first
             closeAllAccordions();
@@ -562,7 +652,9 @@
             // Open the clicked accordion
             openAccordion(weekId);
             activeAccordionId = weekId;
-            @this.set('activeWeekAccordion', weekId);
+            if (typeof Livewire !== 'undefined' && window.Livewire && typeof @this !== 'undefined') {
+                @this.set('activeWeekAccordion', weekId);
+            }
         }
     }
 
@@ -815,49 +907,65 @@
     }
 
     // Weight field visibility handler
-    function attachWeightHandlers() {
-        // Regular exercises
-        document.querySelectorAll('[id^="exerciseWeight"]').forEach(select => {
-            const exerciseId = select.id.replace('exerciseWeight', '');
-            const weightDiv = document.getElementById('weightValueDiv' + exerciseId);
+  function attachWeightHandlers() {
+    // Regular exercises
+    document.querySelectorAll('[id^="exerciseWeight"]').forEach(select => {
+        const exerciseId = select.id.replace('exerciseWeight', '');
+        const weightDiv = document.getElementById('weightValueDiv' + exerciseId);
 
-            if (!weightDiv) return;
+        if (!weightDiv) return;
 
-            // Set initial visibility based on current value
-            weightDiv.style.display = select.value === 'Yes' ? 'block' : 'none';
+        // FIXED: Set initial visibility based on current value
+        const currentValue = select.value;
+        weightDiv.style.display = (currentValue === 'Yes') ? 'block' : 'none';
 
-            // Remove old listener
-            select.removeEventListener('change', select._weightChangeHandler || (() => {}));
+        // Remove old listener
+        select.removeEventListener('change', select._weightChangeHandler || (() => {}));
 
-            const handler = function() {
-                weightDiv.style.display = this.value === 'Yes' ? 'block' : 'none';
-            };
+        const handler = function() {
+            const selectedValue = this.value;
+            weightDiv.style.display = (selectedValue === 'Yes') ? 'block' : 'none';
+        };
 
-            select.addEventListener('change', handler);
-            select._weightChangeHandler = handler;
-        });
+        select.addEventListener('change', handler);
+        select._weightChangeHandler = handler;
+    });
 
-        // Alternate exercises
-        document.querySelectorAll('[id^="altWeight"]').forEach(select => {
-            const altId = select.id.replace('altWeight', '');
-            const weightDiv = document.getElementById('altWeightValueDiv' + altId);
+    
+    document.querySelectorAll('[id^="altWeight"]').forEach(select => {
+        // Extract the alternate ID from the select element's ID
+        const altId = select.id.replace('altWeight', '');
+        const weightDiv = document.getElementById('altWeightValueDiv' + altId);
 
-            if (!weightDiv) return;
+        if (!weightDiv) {
+            console.warn('Weight div not found for alternate:', altId);
+            return;
+        }
 
-            // Set initial visibility
-            weightDiv.style.display = select.value === 'Yes' ? 'block' : 'none';
+        // CRITICAL: Set initial visibility based on current SELECT value (not data attribute)
+        const currentValue = select.value;
+        console.log('Alternate', altId, 'current weight value:', currentValue);
+        weightDiv.style.display = (currentValue === 'Yes') ? 'block' : 'none';
 
-            // Remove old listener
-            select.removeEventListener('change', select._altWeightChangeHandler || (() => {}));
+        // Remove old listener to prevent duplicates
+        select.removeEventListener('change', select._altWeightChangeHandler || (() => {}));
 
-            const handler = function() {
-                weightDiv.style.display = this.value === 'Yes' ? 'block' : 'none';
-            };
+        // Create new handler - This handles manual changes
+        const handler = function() {
+            const selectedValue = this.value;
+            const weightValueDiv = document.getElementById('altWeightValueDiv' + altId);
+            
+            console.log('Alternate weight changed to:', selectedValue, 'for alt:', altId);
+            
+            if (weightValueDiv) {
+                weightValueDiv.style.display = (selectedValue === 'Yes') ? 'block' : 'none';
+            }
+        };
 
-            select.addEventListener('change', handler);
-            select._altWeightChangeHandler = handler;
-        });
-    }
+        select.addEventListener('change', handler);
+        select._altWeightChangeHandler = handler;
+    });
+}
 
     window.addEventListener('livewire:load', function () {
         initializeApp();
@@ -945,7 +1053,7 @@
                         
                         <!-- Week Header -->
                         <div class="week-header {{ $selectedWeekId === $week['id'] ? 'active' : '' }}"
-                            onclick="toggleAccordion({{ $week['id'] }}, event)">
+                            onclick="event.stopPropagation(); toggleAccordion({{ $week['id'] }}, event);">
                             
                             <div class="week-header-content">
                                 <i id="arrow{{ $week['id'] }}" 
@@ -1083,10 +1191,11 @@
                             <!-- Your existing exercise form fields here (from document 3) -->
                             <div class="row">
                                 <!-- Exercise Selection -->
-                                <div class="col-md-3 mb-1">
+                                <div class="col-md-3 mb-1" wire:ignore>
                                     <label class="form-label">Exercise List</label>
                                     <select class="form-control form-control-sm searchable-select"
-                                            wire:change="updateExercise({{ $exercise['id'] }}, 'exercise_list_id', $event.target.value)">
+                                            id="exerciseSelect{{ $exercise['id'] }}"
+                                            data-exercise-id="{{ $exercise['id'] }}">
                                         <option value="">-Select Exercise-</option>
                                         @foreach($exerciseLists as $list)
                                             <option value="{{ $list->id }}" {{ $exercise['exercise_list_id'] == $list->id ? 'selected' : '' }}>
@@ -1152,7 +1261,9 @@
                                 </div>
 
                                 <!-- Weight Value -->
-                                <div class="col-md-2 mb-1" id="weightValueDiv{{ $exercise['id'] }}" style="display: {{ $exercise['weight'] === 'Yes' ? 'block' : 'none' }};">
+                                <div class="col-md-2 mb-1" 
+                                    id="weightValueDiv{{ $exercise['id'] }}" 
+                                    style="display: {{ ($exercise['weight'] ?? '') === 'Yes' ? 'block' : 'none' }};">
                                     <label class="form-label">Weight(kg)</label>
                                     <input type="text" class="form-control form-control-sm"
                                         value="{{ $exercise['weight_value'] ?? '' }}"
@@ -1273,24 +1384,24 @@
                                                 <!-- Weight -->
                                                 <div class="col-md-2 mb-1">
                                                     <label class="form-label">Weight</label>
-                                                    <select class="form-control form-control-sm" 
-                                                            wire:model.defer="alternates.{{ $alternate['id'] }}.weight">
+                                                    <select class="form-control form-control-sm" id="altWeight{{ $alternate['id'] }}" 
+                                                            wire:change="updateAlternateWeight({{ $alternate['id'] }}, $event.target.value)">
                                                         <option value="">-Select-</option>
-                                                        <option value="Yes">Yes</option>
-                                                        <option value="No">No</option>
+                                                        <option value="Yes" {{ ($alternate['weight'] ?? '') === 'Yes' ? 'selected' : '' }}>Yes</option>
+                                                        <option value="No" {{ ($alternate['weight'] ?? '') === 'No' ? 'selected' : '' }}>No</option>
                                                     </select>
                                                 </div>
 
                                                 <!-- Weight Value -->
-                                                @if($alternate['weight'] === 'Yes')
-                                                <div class="col-md-2 mb-1">
+                                                <div class="col-md-2 mb-1" 
+                                                    id="altWeightValueDiv{{ $alternate['id'] }}"
+                                                    style="display: {{ ($alternate['weight'] ?? '') === 'Yes' ? 'block' : 'none' }};">
                                                     <label class="form-label">Weight(kg)</label>
                                                     <input type="text" 
                                                         class="form-control form-control-sm p-0 text-center"
                                                         wire:model.defer="alternates.{{ $alternate['id'] }}.weight_value" 
                                                         value="{{ $alternate['weight_value'] }}">
                                                 </div>
-                                                @endif
                                             </div>
 
                                             <!-- Error container for alternate exercise -->

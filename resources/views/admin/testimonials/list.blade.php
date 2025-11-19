@@ -6,7 +6,11 @@ Testimonial
 @section('css')
 
 <link href="{{ URL::to('front/dashboard/vendor/datatables/css/jquery.dataTables.min.css') }}" rel="stylesheet">
-<style> </style>
+<style> 
+    .footer{
+            padding: 10px !important;
+    }
+</style>
 @endsection
 
 

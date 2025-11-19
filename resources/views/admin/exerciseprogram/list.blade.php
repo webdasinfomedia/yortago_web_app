@@ -268,6 +268,9 @@
         .dropdown.bootstrap-select{
             width: 100% !important;
         }
+        .footer{
+            padding: 10px !important;
+        }
         
     </style>
 @endsection
