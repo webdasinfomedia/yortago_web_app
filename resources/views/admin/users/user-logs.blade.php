@@ -33,9 +33,12 @@
 .modal-title, .modal-footer{
     font-size: 16px;
 }
-table.dataTable thead th, table.dataTable thead td {
-    padding: 10px 10px !important;
+table.dataTable thead th, table.dataTable thead td{
+    padding: 10px 18px 10px 10px !important;
     border-bottom: 1px solid #111;
+}
+.btn-primary{
+    border: none !important;
 }
 
 </style>
@@ -57,7 +60,7 @@ table.dataTable thead th, table.dataTable thead td {
                         <h4 class="card-title mb-1">Exercise Logs for {{ $user->name }}</h4>
                         <p class="text-muted mb-0">{{ $user->email }}</p>
                     </div>
-                    <a href="{{ route('admin.live-stream.users.list') }}" class="btn btn-primary">
+                    <a href="{{ route('admin.live-stream.users.list') }}" class="btn btn-primary btn-rounded">
                         <i class="fa fa-arrow-left"></i> Back to Users
                     </a>
                 </div>
@@ -231,7 +234,7 @@ $(document).ready(function() {
             infoFiltered: "(filtered from _MAX_ total logs)"
         },
         columnDefs: [
-            { orderable: false, targets: [13] } // Disable sorting on Notes column
+            { orderable: false, targets: [12] } // Disable sorting on Notes column
         ]
     });
     
