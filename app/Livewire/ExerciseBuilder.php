@@ -98,7 +98,7 @@ private function populateAlternates()
                             'intensity' => $alt['intensity'] ?? null,
                             'weight' => $alt['weight'] ?? 'No',
                             'weight_value' => $alt['weight_value'] ?? null,
-                            'notes' => strip_tags(html_entity_decode($alt['notes'] ?? null)),
+                            'notes' => $alt['notes'] ?? null,
                         ];
                     }
                 }
@@ -220,7 +220,7 @@ private function populateAlternates()
                                         'intensity' => $alt->pivot->intensity,
                                         'weight' => $alt->pivot->weight ?? $alt->weight ?? 'No',
                                         'weight_value' => $alt->pivot->weight_value ?? $alt->weight_value,
-                                        'notes' => strip_tags(html_entity_decode($alt->pivot->notes ?? $alt->notes ?? '')), 
+                                        'notes' => $alt->pivot->notes ?? $alt->notes ?? '', 
                                         'image' => $alt->image,
                                     ];
                                 })->toArray();
@@ -249,7 +249,7 @@ private function populateAlternates()
                                     'intensity' => $ex->intensity,
                                     'weight' => $ex->weight ?? 'No',
                                     'weight_value' => $ex->weight_value,
-                                    'notes' => strip_tags(html_entity_decode($ex->notes ?? '')),
+                                    'notes' => $ex->notes ?? '',
                                     'alternates' => $linkedAlternates,
                                     'has_available_alternates' => $hasAvailableAlternates,
                                 ];
@@ -587,6 +587,10 @@ private function populateAlternates()
     {
         // \Log::info("update method called");
         $exercise = NewExerciseWeekDayItem::findOrFail($exerciseId);
+        if ($field === 'notes') {
+            $allowedTags = '<p><br><strong><b><em><i><u><ul><ol><li><h1><h2><h3><h4><h5><h6>';
+            $value = strip_tags($value, $allowedTags);
+        }
 
         if ($field === 'exercise_list_id' && !empty($value)) {
             $exerciseList = $this->exerciseLists->find($value);
@@ -802,6 +806,8 @@ private function populateAlternates()
 
         $data = $this->alternates[$alternateId];
         $pivotId = $this->alternatePivotIds[$alternateId];
+        $allowedTags = '<p><br><strong><b><em><i><u><ul><ol><li><h1><h2><h3><h4><h5><h6>';
+        $notes = strip_tags($data['notes'] ?? '', $allowedTags);
         
         DB::table('alternate_exercise_item_pivot')
             ->where('id', $pivotId)
@@ -813,7 +819,7 @@ private function populateAlternates()
                 'intensity' => $data['intensity'] ?? null,
                 'weight' => $data['weight'] ?? null,
                 'weight_value' => $data['weight_value'] ?? null,
-                'notes' => $data['notes'] ?? null,
+                'notes' => $notes,
                 'updated_at' => now(),
             ]);
 
