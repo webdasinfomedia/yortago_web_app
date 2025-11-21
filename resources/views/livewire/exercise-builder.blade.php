@@ -366,8 +366,43 @@
                 width: 1rem;
                 height: 1rem;
             }
+            .notes-display, .notes-preview {
+                font-size: 14px;
+                line-height: 1.5;
+            }
 
-           
+            .notes-display ul, .notes-preview ul,
+            .notes-display ol, .notes-preview ol {
+                margin: 0;
+                padding-left: 20px;
+            }
+
+            .notes-display ul li, .notes-preview ul li {
+                list-style-type: disc;
+                margin-bottom: 4px;
+            }
+
+            .notes-display ol li, .notes-preview ol li {
+                list-style-type: decimal;
+                margin-bottom: 4px;
+            }
+
+            .notes-display h1, .notes-preview h1 { font-size: 1.5em; font-weight: bold; margin: 8px 0; }
+            .notes-display h2, .notes-preview h2 { font-size: 1.3em; font-weight: bold; margin: 6px 0; }
+            .notes-display h3, .notes-preview h3 { font-size: 1.1em; font-weight: bold; margin: 4px 0; }
+
+            .notes-display p, .notes-preview p {
+                margin: 4px 0;
+            }
+
+            .notes-display strong, .notes-preview strong {
+                font-weight: bold;
+            }
+
+            .notes-display em, .notes-preview em {
+                font-style: italic;
+            }
+                
         </style>
 
         <!-- Day Title Modal -->
@@ -1428,10 +1463,12 @@ function attachWeightHandlers() {
         
                             <div class="row">
                                 <!-- Notes -->
-                                <div class="col-12 mb-1">
+                               <div class="col-12 mb-1">
                                     <label class="form-label">Instructions/Notes</label>
-                                    <textarea class="form-control" rows="2"
-                                            wire:blur="updateExercise({{ $exercise['id'] }}, 'notes', $event.target.value)">{{ strip_tags(html_entity_decode($exercise['notes'] ?? '')) }}</textarea>
+                                    <div class="notes-display form-control" 
+                                        style="min-height: 60px; max-height: 150px; overflow-y: auto;">
+                                        {!! $exercise['notes'] ?? '' !!}
+                                    </div>
                                 </div>
                             </div>
 
@@ -1566,9 +1603,10 @@ function attachWeightHandlers() {
                                                 <!-- Notes - FIXED to strip HTML tags -->
                                                 <div class="col-12 mb-1">
                                                     <label class="form-label">Instructions/Notes</label>
-                                                    <textarea class="form-control" 
-                                                            rows="2"
-                                                            wire:model.defer="alternates.{{ $alternate['id'] }}.notes">{{ strip_tags(html_entity_decode($alternate['notes'] ?? '')) }}</textarea>
+                                                    <div class="notes-display form-control" 
+                                                        style="min-height: 60px; max-height: 150px; overflow-y: auto;">
+                                                        {!! $alternate['notes'] ?? '' !!}
+                                                    </div>
                                                 </div>
                                             </div>
 

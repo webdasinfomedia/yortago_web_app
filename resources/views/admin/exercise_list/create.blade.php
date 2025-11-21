@@ -51,11 +51,11 @@
         }
         .form-control{
             font-size: 14px !important;
-            color: #6e6e6e !important;
+            color: #333333 !important;
         }
         .form-label {
             font-weight: 400;
-            color: #6e6e6e !important;
+            color: #333333 !important;
             margin-bottom: 8px;
         }
         
@@ -131,7 +131,7 @@
                 
         }
         .text-muted{
-            color:#6e6e6e;
+            color:#333333;
         }
         .ck.ck-editor__main>.ck-editor__editable
         {
@@ -140,6 +140,38 @@
         }
         .ck.ck-editor__main>.ck-editor__editable:not(.ck-focused){
             height: 200px !important;
+        }
+        .ck.ck-editor__main>.ck-editor__editable ul {
+            list-style-type: disc !important;
+            padding-left: 20px !important;
+            margin: 10px 0 !important;
+        }
+
+        .ck.ck-editor__main>.ck-editor__editable ol {
+            list-style-type: decimal !important;
+            padding-left: 20px !important;
+            margin: 10px 0 !important;
+        }
+
+        .ck.ck-editor__main>.ck-editor__editable ul li {
+            list-style: disc !important;
+            display: list-item !important;
+            margin-bottom: 5px !important;
+        }
+
+        .ck.ck-editor__main>.ck-editor__editable ol li {
+            list-style: decimal !important;
+            display: list-item !important;
+            margin-bottom: 5px !important;
+        }
+
+        /* Nested lists */
+        .ck.ck-editor__main>.ck-editor__editable ul ul li {
+            list-style-type: circle !important;
+        }
+
+        .ck.ck-editor__main>.ck-editor__editable ol ol li {
+            list-style-type: lower-alpha !important;
         }
         .btn-secondary:hover{
             background-color: #C046D3 !important;

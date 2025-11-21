@@ -45,13 +45,13 @@
         
         .form-label {
             font-weight: 400;
-            color: #6e6e6e  !important;
+            color: #333333  !important;
             margin-bottom: 8px;
             font-size: 16px;
         }
         .form-control{
             font-size: 14px !important;
-            color: #6e6e6e !important;
+            color: #333333 !important;
         }
         .form-control:disabled, .form-control[readonly] {
             background-color: #ffffffff;
@@ -145,7 +145,7 @@
                 border-radius: 3px;
             }
             .text-muted{
-            color:#6e6e6e;
+            color:#333333;
         }
          .ck.ck-editor__main>.ck-editor__editable
         {
@@ -161,6 +161,60 @@
         .btn-secondary:hover{
             background-color: #C046D3 !important;
         }
+        .notes-view-container {
+        height: 200px;
+        overflow: auto;
+        color: #333333 !important;
+        font-size: 14px !important;
+        background-color: #ffffff;
+        padding: 10px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+    
+    .notes-view-container ul {
+        list-style-type: disc;
+        padding-left: 20px;
+        margin: 0;
+    }
+    
+    .notes-view-container ol {
+        list-style-type: decimal;
+        padding-left: 20px;
+        margin: 0;
+    }
+    
+    .notes-view-container li {
+        margin-bottom: 5px;
+    }
+    .notes-view-container ul li {
+        list-style: disc !important;
+        display: list-item !important;
+        margin-bottom: 5px;
+    }
+
+    .notes-view-container ol li {
+        list-style: decimal !important;
+        display: list-item !important;
+        margin-bottom: 5px;
+    }
+
+    /* For nested lists */
+    .notes-view-container ul ul li {
+        list-style-type: circle !important;
+    }
+
+    .notes-view-container ol ol li {
+        list-style-type: lower-alpha !important;
+    }
+    
+    .notes-view-container h1 { font-size: 1.5em; font-weight: bold; }
+    .notes-view-container h2 { font-size: 1.3em; font-weight: bold; }
+    .notes-view-container h3 { font-size: 1.1em; font-weight: bold; }
+    
+    .notes-view-container p {
+        margin: 5px 0;
+    }
     </style>
 @endsection
 
@@ -364,11 +418,8 @@ const editors = {};
 document.querySelectorAll('.summernote').forEach(element => {
     const content = element.value;
     const displayDiv = document.createElement('div');
-    displayDiv.className = 'form-control';
-    displayDiv.style.height = '200px';
-    displayDiv.style.overflow = 'auto';
-    displayDiv.style.backgroundColor = '#ffffff';
-    displayDiv.innerHTML = content;
+    displayDiv.className = 'notes-view-container';
+    displayDiv.innerHTML = content; // This preserves HTML formatting
     element.style.display = 'none';
     element.parentNode.appendChild(displayDiv);
 });
