@@ -596,31 +596,53 @@
                 }
             });
 
-            // Listen for weight update after exercise load
+           // Listen for weight update after exercise load
+          
             window.addEventListener('update-weight-after-load', event => {
                 const { exerciseId, weight } = event.detail;
                 
-                // Use setTimeout to ensure DOM is ready after Livewire update
-                setTimeout(() => {
+                const setWeightValues = () => {
                     const weightDiv = document.getElementById('weightValueDiv' + exerciseId);
                     const weightSelect = document.getElementById('exerciseWeight' + exerciseId);
                     
+                    // Normalize weight value
+                    let normalizedWeight = '';
+                    if (weight && weight.toLowerCase() === 'yes') {
+                        normalizedWeight = 'Yes';
+                    } else if (weight && weight.toLowerCase() === 'no') {
+                        normalizedWeight = 'No';
+                    }
+                    
                     if (weightDiv) {
-                        weightDiv.style.display = (weight === 'Yes') ? 'block' : 'none';
+                        weightDiv.style.display = (normalizedWeight === 'Yes') ? 'block' : 'none';
                     }
                     
-                    if (weightSelect) {
-                        weightSelect.value = weight;
+                    if (weightSelect && normalizedWeight) {
+                        weightSelect.value = normalizedWeight;
+                        
+                        // Force selection if value didn't set
+                        if (weightSelect.value !== normalizedWeight) {
+                            const options = weightSelect.options;
+                            for (let i = 0; i < options.length; i++) {
+                                if (options[i].value === normalizedWeight) {
+                                    weightSelect.selectedIndex = i;
+                                    break;
+                                }
+                            }
+                        }
                     }
                     
-                    // Hide the loader
+                    // Hide loader
                     const exerciseCard = document.querySelector(`[data-exercise-id="${exerciseId}"]`)?.closest('.exercise-card');
                     if (exerciseCard) {
-                        exerciseCard.querySelector('.exercise-loader').style.display = 'none';
+                        const loader = exerciseCard.querySelector('.exercise-loader');
+                        if (loader) loader.style.display = 'none';
                     }
-                }, 150); // Small delay to ensure DOM is updated
+                };
+                
+                setTimeout(setWeightValues, 200);
+                setTimeout(setWeightValues, 500);
             });
-
            window.addEventListener('update-alternate-weight-visibility', event => {
                 const { alternateId, weight } = event.detail;
                 //console.log('Received alternate weight visibility event:', alternateId, weight);
@@ -777,10 +799,23 @@
             attachWeightHandlers();
             attachValidation();
             initializeSelect2();
-        document.querySelectorAll('.exercise-loader').forEach(loader => {
-            loader.style.display = 'none';
-        });
-        }, 50);
+            
+            // Hide all loaders
+            document.querySelectorAll('.exercise-loader').forEach(loader => {
+                loader.style.display = 'none';
+            });
+            
+            // Ensure all weight divs have correct visibility based on select values
+            document.querySelectorAll('[id^="exerciseWeight"]').forEach(select => {
+                const exerciseId = select.id.replace('exerciseWeight', '');
+                const weightDiv = document.getElementById('weightValueDiv' + exerciseId);
+                
+                if (weightDiv) {
+                    const currentValue = select.value;
+                    weightDiv.style.display = (currentValue === 'Yes') ? 'block' : 'none';
+                }
+            });
+        }, 100);
     });
 
     // Global validation function for main exercises
@@ -953,7 +988,66 @@
     }
 
     // Weight field visibility handler
-  function attachWeightHandlers() {
+//   function attachWeightHandlers() {
+//     // Regular exercises
+//     document.querySelectorAll('[id^="exerciseWeight"]').forEach(select => {
+//         const exerciseId = select.id.replace('exerciseWeight', '');
+//         const weightDiv = document.getElementById('weightValueDiv' + exerciseId);
+
+//         if (!weightDiv) return;
+
+//         // FIXED: Set initial visibility based on current value
+//         const currentValue = select.value;
+//         weightDiv.style.display = (currentValue === 'Yes') ? 'block' : 'none';
+
+//         // Remove old listener
+//         select.removeEventListener('change', select._weightChangeHandler || (() => {}));
+
+//         const handler = function() {
+//             const selectedValue = this.value;
+//             weightDiv.style.display = (selectedValue === 'Yes') ? 'block' : 'none';
+//         };
+
+//         select.addEventListener('change', handler);
+//         select._weightChangeHandler = handler;
+//     });
+
+    
+//     document.querySelectorAll('[id^="altWeight"]').forEach(select => {
+//         // Extract the alternate ID from the select element's ID
+//         const altId = select.id.replace('altWeight', '');
+//         const weightDiv = document.getElementById('altWeightValueDiv' + altId);
+
+//         if (!weightDiv) {
+//             console.warn('Weight div not found for alternate:', altId);
+//             return;
+//         }
+
+//         // CRITICAL: Set initial visibility based on current SELECT value (not data attribute)
+//         const currentValue = select.value;
+//         console.log('Alternate', altId, 'current weight value:', currentValue);
+//         weightDiv.style.display = (currentValue === 'Yes') ? 'block' : 'none';
+
+//         // Remove old listener to prevent duplicates
+//         select.removeEventListener('change', select._altWeightChangeHandler || (() => {}));
+
+//         // Create new handler - This handles manual changes
+//         const handler = function() {
+//             const selectedValue = this.value;
+//             const weightValueDiv = document.getElementById('altWeightValueDiv' + altId);
+            
+//             console.log('Alternate weight changed to:', selectedValue, 'for alt:', altId);
+            
+//             if (weightValueDiv) {
+//                 weightValueDiv.style.display = (selectedValue === 'Yes') ? 'block' : 'none';
+//             }
+//         };
+
+//         select.addEventListener('change', handler);
+//         select._altWeightChangeHandler = handler;
+//     });
+// }
+function attachWeightHandlers() {
     // Regular exercises
     document.querySelectorAll('[id^="exerciseWeight"]').forEach(select => {
         const exerciseId = select.id.replace('exerciseWeight', '');
@@ -961,51 +1055,41 @@
 
         if (!weightDiv) return;
 
-        // FIXED: Set initial visibility based on current value
+        // Normalize and check current value
         const currentValue = select.value;
-        weightDiv.style.display = (currentValue === 'Yes') ? 'block' : 'none';
+        const isYes = currentValue && currentValue.toLowerCase() === 'yes';
+        weightDiv.style.display = isYes ? 'block' : 'none';
 
         // Remove old listener
         select.removeEventListener('change', select._weightChangeHandler || (() => {}));
 
         const handler = function() {
             const selectedValue = this.value;
-            weightDiv.style.display = (selectedValue === 'Yes') ? 'block' : 'none';
+            const isSelectedYes = selectedValue && selectedValue.toLowerCase() === 'yes';
+            weightDiv.style.display = isSelectedYes ? 'block' : 'none';
         };
 
         select.addEventListener('change', handler);
         select._weightChangeHandler = handler;
     });
 
-    
+    // Alternate exercises (keep existing code)
     document.querySelectorAll('[id^="altWeight"]').forEach(select => {
-        // Extract the alternate ID from the select element's ID
         const altId = select.id.replace('altWeight', '');
         const weightDiv = document.getElementById('altWeightValueDiv' + altId);
 
-        if (!weightDiv) {
-            console.warn('Weight div not found for alternate:', altId);
-            return;
-        }
+        if (!weightDiv) return;
 
-        // CRITICAL: Set initial visibility based on current SELECT value (not data attribute)
         const currentValue = select.value;
-        console.log('Alternate', altId, 'current weight value:', currentValue);
-        weightDiv.style.display = (currentValue === 'Yes') ? 'block' : 'none';
+        const isYes = currentValue && currentValue.toLowerCase() === 'yes';
+        weightDiv.style.display = isYes ? 'block' : 'none';
 
-        // Remove old listener to prevent duplicates
         select.removeEventListener('change', select._altWeightChangeHandler || (() => {}));
 
-        // Create new handler - This handles manual changes
         const handler = function() {
             const selectedValue = this.value;
-            const weightValueDiv = document.getElementById('altWeightValueDiv' + altId);
-            
-            console.log('Alternate weight changed to:', selectedValue, 'for alt:', altId);
-            
-            if (weightValueDiv) {
-                weightValueDiv.style.display = (selectedValue === 'Yes') ? 'block' : 'none';
-            }
+            const isSelectedYes = selectedValue && selectedValue.toLowerCase() === 'yes';
+            weightDiv.style.display = isSelectedYes ? 'block' : 'none';
         };
 
         select.addEventListener('change', handler);
@@ -1295,15 +1379,27 @@
                                         <option value="High" {{ $exercise['intensity'] === 'High' ? 'selected' : '' }}>High</option>
                                     </select>
                                 </div>
-
+                            
+                                <!-- Weight -->
+                                <!--<div class="col-md-2 mb-1">-->
+                                <!--    <label class="form-label">Weight</label>-->
+                                <!--    <select class="form-control form-control-sm" -->
+                                <!--            id="exerciseWeight{{ $exercise['id'] }}"-->
+                                <!--            wire:change="updateExercise({{ $exercise['id'] }}, 'weight', $event.target.value)">-->
+                                <!--        <option value="">-Select Weight-</option>-->
+                                <!--        <option value="Yes" @if(($exercise['weight'] ?? '') == 'Yes') selected @endif>Yes</option>-->
+                                <!--        <option value="No" @if(($exercise['weight'] ?? '') == 'No') selected @endif>No</option>-->
+                                <!--    </select>-->
+                                <!--</div>-->
                                 <!-- Weight -->
                                 <div class="col-md-2 mb-1">
                                     <label class="form-label">Weight</label>
-                                    <select class="form-control form-control-sm" id="exerciseWeight{{ $exercise['id'] }}"
+                                    <select class="form-control form-control-sm" 
+                                            id="exerciseWeight{{ $exercise['id'] }}"
                                             wire:change="updateExercise({{ $exercise['id'] }}, 'weight', $event.target.value)">
                                         <option value="">-Select Weight-</option>
-                                        <option value="Yes" {{ $exercise['weight'] === 'Yes' ? 'selected' : '' }}>Yes</option>
-                                        <option value="No" {{ $exercise['weight'] === 'No' ? 'selected' : '' }}>No</option>
+                                        <option value="Yes" @if(strtolower($exercise['weight'] ?? '') === 'yes') selected @endif>Yes</option>
+                                        <option value="No" @if(strtolower($exercise['weight'] ?? '') === 'no') selected @endif>No</option>
                                     </select>
                                 </div>
 

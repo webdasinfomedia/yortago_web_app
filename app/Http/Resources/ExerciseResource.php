@@ -19,6 +19,7 @@ class ExerciseResource extends JsonResource
         return [
             'id' => $this->id,
             //get id of
+            'type'=>$this->type, 
             'program_id' => $this?->pivot?->id,
             'image' => $this->image ? URL::to($this->image) : null,
             'phase' => "1 - " . count($this->weeks),
