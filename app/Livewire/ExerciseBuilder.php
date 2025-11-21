@@ -38,7 +38,7 @@ class ExerciseBuilder extends Component
     {
         $this->exerciseId = decrypt($exerciseId);
         
-        // Cache exercise lists for 1 hour to reduce queries
+        
         $this->exerciseLists = Cache::remember('exercise_lists_all', 3600, function () {
             return ExerciseList::orderBy('name')->get();
         });
@@ -169,7 +169,7 @@ private function populateAlternates()
     // OPTIMIZED loadWeeks method - CRITICAL FIX for N+1 queries
     private function loadWeeks()
     {
-        // Single query with all necessary relationships eager loaded
+        // all necessary relationships eager loaded
         $this->weeks = $this->exercise->weeks()
             ->with([
                 'days' => function($query) {
@@ -228,7 +228,8 @@ private function populateAlternates()
                                 // Check for available alternates (cached for performance)
                                 $hasAvailableAlternates = false;
                                 if ($ex->exercise_list_id) {
-                                    $cacheKey = "available_alternates_{$ex->exercise_list_id}_" . md5(implode(',', $linkedAlternateIds));
+                                    $version = Cache::get("alternates_version_{$ex->exercise_list_id}", 0);
+                                    $cacheKey = "available_alternates_{$ex->exercise_list_id}_{$version}_" . md5(implode(',', $linkedAlternateIds));
                                     
                                     $hasAvailableAlternates = Cache::remember($cacheKey, 300, function() use ($ex, $linkedAlternateIds) {
                                         return AlternateExerciseList::where('exercise_list_id', $ex->exercise_list_id)

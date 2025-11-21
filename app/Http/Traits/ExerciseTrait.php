@@ -5,6 +5,7 @@ namespace App\Http\Traits;
 use App\Models\NewExerciseWeek;
 use App\Models\NewExerciseWeekDay;
 use App\Models\User;
+use App\Models\NewUserExercise;
 
 trait ExerciseTrait
 {
@@ -58,7 +59,11 @@ trait ExerciseTrait
     {
         $user = User::find($user_id);
         $user->update(['is_assign' => false]);
-        $user->exercises()->detach($new_exercise_id);
+         
+        NewUserExercise::where('user_id', $user_id)
+        ->where('new_exercise_id', $new_exercise_id)
+        ->delete();
+        // $user->exercises()->detach($new_exercise_id);
     }
 
     public function updateExerciseDates($userId, $exerciseId, $startDate, $completionDate)

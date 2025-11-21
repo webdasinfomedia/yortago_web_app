@@ -48,8 +48,8 @@ class NewExercise extends Model
     public function users()
     {
         return $this->belongsToMany(User::class,'new_user_exercises')
-            ->withPivot('start_date', 'completion_date','id')
-            ->withTimestamps();
+            ->withPivot('start_date', 'completion_date','id','deleted_at')
+            ->withTimestamps()->wherePivotNull('deleted_at');
     }
 
     //category

@@ -195,9 +195,9 @@ class User extends Authenticatable
 
         return $this->belongsToMany(NewExercise::class,'new_user_exercises')
 
-            ->withPivot('start_date', 'completion_date','id')
+            ->withPivot('start_date', 'completion_date','id','deleted_at')
 
-            ->withTimestamps();
+            ->withTimestamps()->wherePivotNull('deleted_at');
 
     }
 

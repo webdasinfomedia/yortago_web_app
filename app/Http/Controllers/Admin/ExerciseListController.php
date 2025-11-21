@@ -23,6 +23,7 @@ use App\Http\Traits\ResponseTrait;
 use App\Models\Metric;
 use App\Mail\FormCheckReply;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Cache;
 
 class ExerciseListController extends Controller
 {
@@ -100,7 +101,7 @@ class ExerciseListController extends Controller
         $exercise_list->video_link = $request->video_link;
         $exercise_list->notes = $request->notes;
         $exercise_list->save();
-
+        Cache::forget('exercise_lists_all');
         // Redirect to edit page after creation to add alternate exercises
         return redirect()->route('admin.new.exercise.edit_exercise_list', ['id' => $exercise_list->id])
             ->with('message', 'Exercise List created successfully! You can now add alternative exercises.');
@@ -164,6 +165,7 @@ class ExerciseListController extends Controller
         $exercise_list->weight_value = $request->weight_value ?? null;
         $exercise_list->notes = $request->notes;
         $exercise_list->save();
+        Cache::forget('exercise_lists_all');
 
         return redirect()->back()->with('message', 'Exercise List updated successfully!');
     }
@@ -205,6 +207,8 @@ class ExerciseListController extends Controller
         $alternate_exercise->notes = $request->notes;
         $alternate_exercise->save();
 
+        $this->clearAlternatesCache($request->exercise_list_id);
+
         return redirect()->back()->with('message', 'Alternate Exercise created successfully!');
     }
 
@@ -223,6 +227,7 @@ class ExerciseListController extends Controller
         ]);
 
         $alternate_exercise = AlternateExerciseList::findOrFail($request->id);
+        $oldExerciseListId = $alternate_exercise->exercise_list_id;
         $alternate_exercise->exercise_list_id = $request->exercise_list_id;
         $alternate_exercise->name = $request->name;
         $alternate_exercise->body_part_id = $request->body_part_id;
@@ -243,6 +248,11 @@ class ExerciseListController extends Controller
         $alternate_exercise->video_link = $request->video_link;
         $alternate_exercise->notes = $request->notes;
         $alternate_exercise->save();
+
+        $this->clearAlternatesCache($oldExerciseListId);
+        if ($oldExerciseListId != $request->exercise_list_id) {
+            $this->clearAlternatesCache($request->exercise_list_id);
+        }
 
         return redirect()->back()->with('message', 'Alternate Exercise updated successfully!');
     }
@@ -271,9 +281,17 @@ class ExerciseListController extends Controller
     public function delete_alternate_exercise($id)
     {
         $alternate = AlternateExerciseList::findOrFail($id);
+        $exerciseListId = $alternate->exercise_list_id;
         $alternate->delete();
+        // Clear cache after delete
+        $this->clearAlternatesCache($exerciseListId);
         
         return response()->json(['success' => true, 'message' => 'Alternate exercise deleted successfully']);
+    }
+
+    private function clearAlternatesCache($exerciseListId)
+    {
+        Cache::put("alternates_version_{$exerciseListId}", now()->timestamp, 3600);
     }
 
     public function delete_exercise_list(Request $request)
@@ -284,6 +302,7 @@ class ExerciseListController extends Controller
         AlternateExerciseList::where('exercise_list_id', $exercise_list->id)->delete();
         
         $exercise_list->delete();
+        Cache::forget('exercise_lists_all');
 
         return redirect()->back()->with('message', 'Exercise List deleted successfully!')->with('active_tab', 'exercise-list');
     }

@@ -37,7 +37,7 @@ class NewUserExerciseLog extends Model
     }
 
     public function newUserExercise(){
-        return $this->belongsTo(NewUserExercise::class, 'new_user_exercise_id');
+        return $this->belongsTo(NewUserExercise::class, 'new_user_exercise_id')->withTrashed();
     }
     // public function exercise()
     // {
@@ -46,7 +46,7 @@ class NewUserExerciseLog extends Model
     
     public function userExerciseProgram()
     {
-        return $this->belongsTo(NewUserExercise::class, 'new_user_exercise_id');
+        return $this->belongsTo(NewUserExercise::class, 'new_user_exercise_id')->withTrashed();
     }
 
     // Relationship to the actual exercise (through userExerciseProgram)
