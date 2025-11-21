@@ -592,11 +592,18 @@ private function populateAlternates()
             $exerciseList = $this->exerciseLists->find($value);
             
             if ($exerciseList) {
+                $weightValue = $exerciseList->weight;
+                if (strtolower($weightValue) === 'yes') {
+                    $weightValue = 'Yes';
+                } else {
+                    $weightValue = 'No';
+                }
+                
                 $exercise->update([
                     'exercise_list_id' => $value,
                     'name' => $exerciseList->name,
-                    'weight' => $exerciseList->weight ?? 'No',
-                    'weight_value' => $exerciseList->weight_value ?? null,
+                    'weight' => $weightValue,
+                    'weight_value' => ($weightValue === 'Yes') ? ($exerciseList->weight_value ?? null) : null,
                     'notes' => $exerciseList->notes ?? '',
                 ]);
                 
