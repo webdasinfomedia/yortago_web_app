@@ -101,6 +101,9 @@
 .content-body{
     background-color: #fff !important;
 }
+body{
+    background-color: #fff !important
+}
 .btn:hover {
     /* color: white; */
     text-decoration: underline !important;

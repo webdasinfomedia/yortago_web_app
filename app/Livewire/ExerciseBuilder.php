@@ -30,6 +30,9 @@ class ExerciseBuilder extends Component
     public $dayTitle = '';
     public $daySummary = '';
     public $dayDuration = '';
+    protected $listeners = [
+        'select2-updated' => 'updateExerciseSelect'
+    ];
 
     public function mount($exerciseId)
     {
@@ -572,8 +575,17 @@ private function populateAlternates()
         $this->dayDuration = '';
     }
 
+    
+    public function updateExerciseSelect($id, $value)
+    {
+        //\Log::info("Select2 Updated: ID = $id, VALUE = $value");
+        $this->updateExercise($id, 'exercise_list_id', $value);
+    }
+
+
     public function updateExercise($exerciseId, $field, $value)
     {
+        // \Log::info("update method called");
         $exercise = NewExerciseWeekDayItem::findOrFail($exerciseId);
 
         if ($field === 'exercise_list_id' && !empty($value)) {
@@ -596,19 +608,16 @@ private function populateAlternates()
                 $this->populateAlternates();
                 $this->populateAlternatePivotIds();
                 
-                // Get the fresh exercise data after reload
-                $freshExercise = NewExerciseWeekDayItem::findOrFail($exerciseId);
+                // Get the fresh weight value
+                $freshWeight = $exerciseList->weight ?? 'No';
                 
-                // Dispatch event with the UPDATED weight value from database
-                $this->dispatch('update-weight-visibility', [
-                    'exerciseId' => $exerciseId,
-                    'weight' => $freshExercise->weight ?? 'No'
-                ]);
+                // Dispatch reinit-select2 first, then weight updates with delay
+                $this->dispatch('reinit-select2');
                 
-                // ADDED: Dispatch event to update the weight SELECT element value in DOM
-                $this->dispatch('update-weight-select', [
+                // Use dispatch with a slight delay handled in JS
+                $this->dispatch('update-weight-after-load', [
                     'exerciseId' => $exerciseId,
-                    'weight' => $freshExercise->weight ?? 'No'
+                    'weight' => $freshWeight
                 ]);
             } else {
                 $exercise->update(['exercise_list_id' => $value]);

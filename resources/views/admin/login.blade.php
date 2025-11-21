@@ -9,7 +9,12 @@
     <!-- Favicon icon -->
     <link rel="icon" type="image/png" sizes="16x16" href="{{URL::to($setting['favIcon'])}}">
     <link href="{{ URL::to('front/dashboard/css/style.css') }}" rel="stylesheet">
-
+    <style>
+        .btn-primary:hover, .btn-primary:focus, .btn-primary.focus{
+            color: white !important;
+            background-color: #B9732F;
+        }
+    </style>
 </head>
 
 <body class="h-100">

@@ -355,6 +355,18 @@
                 box-shadow: none !important;
                 border: none !important;
             }
+            .exercise-loader {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-bottom: 5px;
+                font-size: 12px;
+            }
+            .spinner-sm {
+                width: 1rem;
+                height: 1rem;
+            }
+
            
         </style>
 
@@ -485,13 +497,18 @@
             if ($exerciseBody.length === 0) return;
             
             const exerciseId = $exerciseBody.attr('id').replace('exerciseBody', '');
-            
+             $exerciseCard.find('.exercise-loader').show();
             try {
                 if (typeof Livewire !== 'undefined' && window.Livewire) {
-                    @this.call('updateExercise', exerciseId, 'exercise_list_id', value);
+                    Livewire.dispatch('select2-updated', {
+                        id: $(this).data('exercise-id'),
+                        value: $(this).val()
+                    });
+                    // @this.call('updateExercise', exerciseId, 'exercise_list_id', value);
                 }
             } catch (error) {
                 console.error('Error calling Livewire method:', error);
+                $exerciseCard.find('.exercise-loader').hide();
             }
         });
     }
@@ -576,6 +593,31 @@
                         weightDiv.style.display = (weight === 'Yes') ? 'block' : 'none';
                     }
                 }
+            });
+
+            // Listen for weight update after exercise load
+            window.addEventListener('update-weight-after-load', event => {
+                const { exerciseId, weight } = event.detail;
+                
+                // Use setTimeout to ensure DOM is ready after Livewire update
+                setTimeout(() => {
+                    const weightDiv = document.getElementById('weightValueDiv' + exerciseId);
+                    const weightSelect = document.getElementById('exerciseWeight' + exerciseId);
+                    
+                    if (weightDiv) {
+                        weightDiv.style.display = (weight === 'Yes') ? 'block' : 'none';
+                    }
+                    
+                    if (weightSelect) {
+                        weightSelect.value = weight;
+                    }
+                    
+                    // Hide the loader
+                    const exerciseCard = document.querySelector(`[data-exercise-id="${exerciseId}"]`)?.closest('.exercise-card');
+                    if (exerciseCard) {
+                        exerciseCard.querySelector('.exercise-loader')?.style.display = 'none';
+                    }
+                }, 150); // Small delay to ensure DOM is updated
             });
 
            window.addEventListener('update-alternate-weight-visibility', event => {
@@ -734,6 +776,9 @@
             attachWeightHandlers();
             attachValidation();
             initializeSelect2();
+        document.querySelectorAll('.exercise-loader').forEach(loader => {
+            loader.style.display = 'none';
+        });
         }, 50);
     });
 
@@ -1190,6 +1235,7 @@
                         <div id="exerciseBody{{ $exercise['id'] }}" class="card-body" style="display: block;">
                             <!-- Your existing exercise form fields here (from document 3) -->
                             <div class="row">
+
                                 <!-- Exercise Selection -->
                                 <div class="col-md-3 mb-1" wire:ignore>
                                     <label class="form-label">Exercise List</label>
@@ -1277,8 +1323,12 @@
                                         <ul class="mb-0 exercise-error-list"></ul>
                                     </div>
                                 </div>
+                                 <div class="exercise-loader py-1 px-3" style="display:none;">
+                                    <div class="spinner-border text-primary spinner-sm" role="status"></div>
+                                    <span>Loading...</span>
+                                </div>
                             </div>
-
+        
                             <div class="row">
                                 <!-- Notes -->
                                 <div class="col-12 mb-1">
