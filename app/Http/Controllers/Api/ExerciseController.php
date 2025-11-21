@@ -91,6 +91,21 @@ class ExerciseController extends Controller
             'my_exercises_next_page_url' => $myexercises->nextPageUrl(),
             'generic_exercises_next_page_url' => $genericExercises->nextPageUrl(),
             'next_page_url' => $exercises->nextPageUrl(), // URL for the next page of exercises
+            // For my_exercises
+            'my_exercises_total_pages' => $myexercises->lastPage(),
+            'my_exercises_total_items' => $myexercises->total(),
+
+            // For generic_exercises
+            'generic_exercises_total_pages' => $genericExercises->lastPage(),
+            'generic_exercises_total_items' => $genericExercises->total(),
+
+            // For exercises
+            'exercises_total_pages' => $exercises->lastPage(),
+            'exercises_total_items' => $exercises->total(),
+
+            // For favourite_exercises
+            'favourite_exercises_total_pages' => $favouriteExerciseList->lastPage(),
+            'favourite_exercises_total_items' => $favouriteExerciseList->total(),
         ]);
         
     }
