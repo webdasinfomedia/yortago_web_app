@@ -497,7 +497,8 @@
             if ($exerciseBody.length === 0) return;
             
             const exerciseId = $exerciseBody.attr('id').replace('exerciseBody', '');
-             $exerciseCard.find('.exercise-loader').show();
+             
+            $exerciseCard.find('.exercise-loader').show();
             try {
                 if (typeof Livewire !== 'undefined' && window.Livewire) {
                     Livewire.dispatch('select2-updated', {
@@ -615,7 +616,7 @@
                     // Hide the loader
                     const exerciseCard = document.querySelector(`[data-exercise-id="${exerciseId}"]`)?.closest('.exercise-card');
                     if (exerciseCard) {
-                        exerciseCard.querySelector('.exercise-loader')?.style.display = 'none';
+                        exerciseCard.querySelector('.exercise-loader').style.display = 'none';
                     }
                 }, 150); // Small delay to ensure DOM is updated
             });
